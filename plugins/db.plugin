@@ -1,0 +1,118 @@
+#!/bin/sh
+# tmww plugin: db
+# whatis: item/mob db lookup (using tmwa-server-data)
+# conflicts: -
+# depends: -
+# recommends: -
+
+# this file is part of tmww - the mana world watcher
+# willee, 2012-2014
+# GPL v3
+
+# error codes:
+# 1 -- parameters error
+# 2 -- tool missing
+# 3 -- config/database file missing
+
+# check if not run as plugin
+if [ "$TMWW_PLUGINS" != "yes" ] ; then
+    echo >&2 "This script is tmww plugin and rely heavily on it's facilities."
+    exit 1
+fi
+
+# when called as plugin - abort if no SERVERPATH was given
+if [ -z "${TMWW_SERVERPATH}" ]; then
+    error "No serverpath given. Aborting."
+    return 1
+fi
+
+help_db() {
+    cat << EOF
+FIXME
+EOF
+}
+
+[ "$TMWW_PLUGINHELP" = "yes" ] && help_server && return 0
+
+requireplugin db.lib.sh || return 1
+
+[ "${TMWW_PLUGINEXPORT}" = "yes" ] && return 0
+
+aux_db_opts() {
+    while ${GETOPTS} cnrf: opt; do
+        case "${opt}" in
+            # no fields captions
+            c)  db_no_caption="yes" ;;
+            # suppress append id/name to fields query
+            n)  db_suppress_append="yes" ;;
+            # output raw tab-separated fields without pretty-printing
+            r)  db_raw_fields="yes" ;;
+            # custom "cut -f" expression for db filter
+            f)  db_cut_fields="${OPTARG}" ;;
+            *)  error_incorrect; return 1 ;;
+        esac
+    done
+}
+
+#
+# char
+#
+#
+
+db_parse_item() {
+    local subcommand db_no_caption db_suppress_append db_cut_fields db_raw_fields
+    db_no_caption=''; db_suppress_append=''; db_cut_fields=''; db_raw_fields='';
+    aux_db_opts "$@"
+    shift $( expr $OPTIND - 1 )
+    subcommand="$1"; shift
+    case "${subcommand}" in
+        get)    func_item_get "$@" ;;
+        show)   func_item_show "$@" ;;
+        mobs)   func_item_mobs "$@" ;;
+        '') error_missing; return 1; ;;
+        *) error_incorrect; return 1; ;;
+    esac
+}
+
+#
+# party
+#
+#
+
+db_parse_mob() {
+    local subcommand db_no_caption db_suppress_append db_cut_fields db_raw_fields
+    db_no_caption=''; db_suppress_append=''; db_cut_fields=''; db_raw_fields='';
+    aux_db_opts "$@"
+    shift $( expr $OPTIND - 1 )
+    subcommand="$1"; shift
+    case "${subcommand}" in
+        get)    func_mob_get "$@" ;;
+        show)   func_mob_show "$@" ;;
+        drops)  func_mob_drops "$@" ;;
+        '') error_missing; return 1; ;;
+        *) error_incorrect; return 1; ;;
+    esac
+}
+
+#
+# main
+#
+#
+
+db_main_parser() {
+    local subcommand
+    OPTIND=1
+    subcommand="$1"; shift
+    case "${subcommand}" in 
+        item)       db_parse_item "$@" ;;
+        mob)        db_parse_mob "$@" ;;
+        '')         error_missing; return 1 ;;
+        *)          error_incorrect; return 1 ;;
+    esac
+}
+
+db_main_parser "$@"
+[ $err_flag -eq 1 ] && return 1
+
+return 0
+

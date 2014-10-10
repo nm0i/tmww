@@ -1,0 +1,237 @@
+#!/bin/sh
+# tmww plugin: client
+# whatis: client versions log queries
+# conflicts: -
+# depends: activity, alts
+# recommends: -
+
+# this file is part of tmww - the mana world watcher
+# willee, 2012-2014
+# GPL v3
+
+# check if not run as plugin
+if [ "$TMWW_PLUGINS" != "yes" ] ; then
+    echo >&2 "This script is tmww plugin and rely heavily on it's facilities."
+    exit 1
+fi
+
+help_client() {
+    cat << EOF
+client -- client versions log queries
+
+    - determining time when client was updated to compare to other suspected alts
+    - compare clients on given time interval by summary statistics
+
+Command line options:
+    subcommand: timeline -- tail detected clients log in order of records
+        options: ndmftacCp
+    subcommand: pattern -- chars top list on time interval with client names matching pattern
+        options: nudmft
+    subcommand: summary -- top list of most frequent detected versions for char/player
+        options: ndmftacCp
+    subcommand: similar -- chars top list detected to use most frequent client version
+        of target player on given time interval
+        options: nidmftacCp
+    Option description:
+        [ -n N ] - limit output by N lines; default to 2 for all commands
+        [ -u PATTERN ] -- client version ("useragent") search pattern, e.g. "Linux.*1.4.1.18"
+        [ -i ] -- include target player chars (only for "similar" subcommand) 
+        [ -s ] -- pattern case sensitivity (only for "pattern" subcommand)
+    - time options:
+        [ { -d | -m } N ] -- during N last days/months
+        [ -f yyyy-mm[-dd] ] -- start interval
+        [ -t yyyy-mm[-dd] ] -- end interval. defaults to current day if omitted
+    - target options:
+        [ -a ACCID ] -- account ID
+        [ -c CHARNAME ] -- character
+        [ -C CHARNAME ] -- all chars on account (account by char)
+        [ -p PLAYER ] -- all chars on player
+EOF
+}
+
+[ "$TMWW_PLUGINHELP" = "yes" ] && help_client && return 0
+
+requireplugin activity.lib.sh || return 1
+
+#
+# aux
+#
+#
+
+func_client_chars() {
+    chnames=$( aux_client_chars ) || return 1
+
+    check_dir "${TMWW_PRIVTMP}"
+    set_pattern_lock
+
+    patternfile="${TMWW_PRIVTMP}/client.pattern"
+    : > "${patternfile}"
+    printf "%s\n" "${chnames}" | while read line; do
+        printf "detected.*\"%s\"\n" "${line}" >> "${patternfile}"
+    done
+}
+
+#
+# options parser
+#
+#
+
+[ "$TMWW_PLUGINEXPORT" = "yes" ] && return 0
+
+client_subcommand=''
+case "$1" in
+    timeline) client_subcommand="timeline"
+        opts=a:c:C:p:n:d:m:f:t:
+        ;;
+    similar) client_subcommand="similar"
+        opts=ia:c:C:p:n:d:m:f:t:
+        ;;
+    summary) client_subcommand="summary"
+        opts=a:c:C:p:n:d:m:f:t:
+        ;;
+    pattern) client_subcommand="pattern"
+        opts=sn:d:m:f:t:u:
+        ;;
+    *)  error_incorrect; return 1
+        ;;
+    '') error_missing; return 1
+        ;;
+esac
+
+shift
+[ -z "$1" ] && { error_params "Not enough options. Aborting."; return 1; }
+
+client_method=''
+interval_method=''
+includechars=''
+casesensitive=''
+
+# next variable should be clean
+# in case same plugin was called before in same script
+interval_day=''
+interval_month=''
+interval_from=''
+interval_to=''
+
+OPTIND=1
+while $GETOPTS $opts opt ; do
+    case "$opt" in
+        a)  client_value="$OPTARG"
+            client_method="accid"
+            ;;
+        c)  client_value="$OPTARG"
+            client_method="charname"
+            ;;
+        C)  client_value="$OPTARG"
+            client_method="accbychar"
+            ;;
+        p)  client_value="$OPTARG"
+            client_method="player"
+            ;;
+        n)  client_lines_limit="$OPTARG"
+            case "${client_lines_limit}" in
+                *[!0-9]*) error_params "Incorrect output lines limit. Aborting."; return 1; ;; esac
+            ;;
+        f)  interval_from="$OPTARG"
+            [ -z "${interval_day}" -a -z "${interval_month}" ] || \
+                { error_params "Options conflict. Aborting"; return 1; }
+            ;;
+        t)  interval_to="$OPTARG"
+            [ -z "${interval_from}" ] && \
+                { error_params "No -f argument before -t. Aborting."; return 1; }
+            ;;
+        d)  interval_day="$OPTARG"
+            [ -z "${interval_from}" ] || \
+                { error_params "Options conflict. Aborting"; return 1; }
+            check_string_chars "${interval_day}" "*[!0-9]*" \
+                "Incorrect days number. Aborting." || return 1
+            ;;
+        m)  interval_month="$OPTARG"
+            [ -z "${interval_from}" ] || \
+                { error_params "Options conflict. Aborting"; return 1; }
+            check_string_chars "${interval_month}" "*[!0-9]*" \
+                "Incorrect months number. Aborting." || return 1
+            ;;
+        u)  useragent="$OPTARG"
+            ;;
+        i)  includechars="yes"
+            ;;
+        s)  casesensitive='-i'
+            ;;
+        *)  error_incorrect; return 1
+            ;;
+    esac
+done
+
+shift $(expr $OPTIND - 1)
+[ -z "$1" ] || { error_params "Too much arguments. Aborting."; return 1; }
+
+[ -z "${client_lines_limit}" ] && client_lines_limit=2
+if [ -z "${interval_day}" -a -z "${interval_month}" -a -z "${interval_from}" ]; then
+    interval_month=1
+fi
+
+#
+# main
+#
+#
+
+interval=''
+case "${client_subcommand}" in
+    timeline)
+        [ -z "${client_method}" ] && { error_params "Target missing. Aborting."; return 1; }
+        aux_form_interval || return 1
+        [ "${date_with_day}" = "yes" -o ! -z "$interval_day" ] || {
+            error_params "Interval should be in days. Aborting."; return 1; }
+        interval=$( printf "%s" "${interval}" | ${AWK} ${AWKPARAMS} -- '{for (i=NF;i>0;i--) printf "%s ",$i}')
+        func_client_chars || return 1
+        cd "${TMWW_VERSIONREPORT}/${servername}" && \
+            grep -f "${patternfile}" ${interval} 2>/dev/null | \
+            ${AWK} ${AWKPARAMS} -F '"' -- '{sub("\\.yml.*","",$1); print $1, $2 ", " $4 ", " $6}' | \
+            tail -n "${client_lines_limit}"
+        unset_pattern_lock
+        ;;
+    summary)
+        [ -z "${client_method}" ] && { error_params "Target missing. Aborting."; return 1; }
+        aux_form_interval || return 1
+        func_client_chars || return 1
+        cd "${TMWW_VERSIONREPORT}/${servername}" && \
+            grep -h -f "${patternfile}" ${interval} 2>/dev/null | \
+            cut -d '"' -f 6- | cut -d '"' -f -1 | sort | uniq -c | \
+            sort -rn | head -n "${client_lines_limit}"
+        unset_pattern_lock
+        ;;
+    pattern)
+        aux_form_interval || return 1
+        cd "${TMWW_VERSIONREPORT}/${servername}" && \
+            grep -h ${casesensitive} "detected.*${useragent}" ${interval} 2>/dev/null | \
+            ${AWK} ${AWKPARAMS} -F '"' -- '{print $4,$6}' | sort | uniq -c | \
+            sort -rn | head -n "${client_lines_limit}"
+        ;;
+    similar)
+        [ -z "${client_method}" ] && { error_params "Target missing. Aborting."; return 1; }
+        aux_form_interval || return 1
+        func_client_chars || return 1
+        topresult=$(cd "${TMWW_VERSIONREPORT}/${servername}" && \
+            grep -h -f "${patternfile}" ${interval} 2>/dev/null | \
+            cut -d '"' -f 6- | cut -d '"' -f -1 | sort | uniq -c | \
+            sort -rn | head -n 1 | sed ${ESED} 's/^ *[0-9][0-9]* *//')
+        [ -z "${topresult}" ] && { unset_pattern_lock; return; }
+        patternfile="${TMWW_PRIVTMP}/client.pattern"
+        : > "${patternfile}"
+        [ "${includechars}" = "yes" ] || {
+            printf "%s\n" "${chnames}" | while read line; do
+                printf "\"%s\"\n" "${line}" >> "${patternfile}"
+            done
+        }
+        cd "${TMWW_VERSIONREPORT}/${servername}" && \
+            grep -h "detected.*${topresult}" ${interval} 2>/dev/null | \
+            grep -v -f "${patternfile}" 2>/dev/null | \
+            ${AWK} ${AWKPARAMS} -F '"' -- '{print $4,$6}' | sort | uniq -c | \
+            sort -rn | head -n "${client_lines_limit}"
+        unset_pattern_lock
+        ;;
+esac
+
+return 0
+

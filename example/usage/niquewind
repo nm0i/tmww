@@ -1,0 +1,298 @@
+tmww usage example session
+==========================
+date: 2014-06-06
+
+hints
+-----
+
+Narus: DarkWind is Monique friend it seems you forgot her weird since she is a
+really old player here she is in a cute ss i have.
+
+https://forums.themanaworld.org/viewtopic.php?f=12&t=13831&start=30
+
+[23:04] Tinker Bell: i just have whatever u get from synaptic
+[23:04] Tinker Bell: i dunno how to do manaplus, darkwind used to do that for me
+
+NiqueWind = moNique + darkWind
+
+checking monique versions
+-------------------------
+
+$ tmww summary -p monique -m 2 -n 3
+     33 ManaPlus (Linux; ManaPlus; SDL1.2; 4144 v1.4.5.10)
+     29 ManaPlus (Linux; ManaPlus; SDL1.2; 4144 v1.4.1.18)
+      5 ManaPlus (Linux; ManaPlus; SDL1.2; 4144 v1.4.4.26)
+
+$ tmww player field monique accounts
+{"accounts":["2105482","2106514","2180820","2181639","2184765"]}
+
+$ tmww summary -a 2105482 -m 2
+      4 ManaPlus (Linux; ManaPlus; SDL1.2; 4144 v1.4.1.18)
+      3 ManaPlus (Linux; ManaPlus; SDL1.2; 4144 v1.4.5.10)
+$ tmww char show by id 2105482
+Monica.
+NiqueWind's Collection
+NiqueWind's Wardrobe
+Tinker BeII
+Tra La La
+
+$ tmww summary -a 2106514 -m 2
+     11 ManaPlus (Linux; ManaPlus; SDL1.2; 4144 v1.4.1.18)
+      9 ManaPlus (Linux; ManaPlus; SDL1.2; 4144 v1.4.5.10)
+$ tmww char show by id 2106514
+Chantale
+(empty) 0GP
+Hinei Ma Tov
+Monique
+Tinky Bell
+
+$ tmww summary -a 2180820 -m 2
+      3 ManaPlus (Linux; ManaPlus; SDL1.2; 4144 v1.4.5.10)
+$ tmww char show by id 2180820
+Bat Girl
+Chef Poutine
+Snow White
+Sunshai Vanhalis
+tmw_SQL TEST.1
+
+$ tmww summary -a 2181639 -m 2
+     16 ManaPlus (Linux; ManaPlus; SDL1.2; 4144 v1.4.5.10)
+     13 ManaPlus (Linux; ManaPlus; SDL1.2; 4144 v1.4.1.18)
+$ tmww char show by id 2181639
+boo boo.
+Boutique Monique
+Elizabeth II
+Goddess Artemis
+Moon Temple Night
+Tammie-Lee
+Tinker Bell
+
+$ tmww summary -a 2184765 -m 2
+      2 ManaPlus (Linux; ManaPlus; SDL1.2; 4144 v1.4.5.10)
+      1 ManaPlus (Linux; ManaPlus; SDL1.2; 4144 v1.4.1.18)
+$ tmww char show by id 2184765
+Lady Skeleton.
+NiqueWind's Vault
+
+checking similar matches
+------------------------
+
+$ tmww pattern -u 'Linux.*1.4.1.18' -m 2 -n 20
+     83 pikabr ManaPlus (Linux; The Mana World; SDL1.2; 4144 v1.4.1.18)
+     60 zaxz ManaPlus (Linux; ManaPlus; SDL1.2; 4144 v1.4.1.18)
+     33 Gomez ManaPlus (Linux; ManaPlus; SDL1.2; 4144 v1.4.1.18)
+     27 maximusbr ManaPlus (Linux; ManaPlus; SDL1.2; 4144 v1.4.1.18)
+     13 legendario ManaPlus (Linux; ManaPlus; SDL1.2; 4144 v1.4.1.18)
+     13 juntrip ManaPlus (Linux; ManaPlus; SDL1.2; 4144 v1.4.1.18)
+     12 Moon Temple Night ManaPlus (Linux; ManaPlus; SDL1.2; 4144 v1.4.1.18)
+     12 Eshgaza ManaPlus (Linux; ManaPlus; SDL1.2; 4144 v1.4.1.18)
+     11 goatze ManaPlus (Linux; ManaPlus; SDL1.2; 4144 v1.4.1.18)
+     10 Elenyi ManaPlus (Linux; ManaPlus; SDL1.2; 4144 v1.4.1.18)
+     10 DarcWynd ManaPlus (Linux; The Mana World; SDL1.2; 4144 v1.4.1.18)
+      9 aceer.one ManaPlus (Linux; ManaPlus; SDL1.2; 4144 v1.4.1.18)
+      8 Tinky Bell ManaPlus (Linux; ManaPlus; SDL1.2; 4144 v1.4.1.18)
+      8 Bugue666 ManaPlus (Linux; The Mana World; SDL1.2; 4144 v1.4.1.18)
+      7 ololoev ManaPlus (Linux; ManaPlus; SDL1.2; 4144 v1.4.1.18)
+      7 Lucile ManaPlus (Linux; The Mana World; SDL1.2; 4144 v1.4.1.18)
+      6 Prezmyra ManaPlus (Linux; ManaPlus; SDL1.2; 4144 v1.4.1.18)
+      6 Kutemiro ManaPlus (Linux; ManaPlus; SDL1.2; 4144 v1.4.1.18)
+      6 *****ELFO***** ManaPlus (Linux; ManaPlus; SDL1.2; 4144 v1.4.1.18)
+
+$ tmww summary -C zaxz -m 2
+     60 ManaPlus (Linux; ManaPlus; SDL1.2; 4144 v1.4.1.18)
+$ tmww char dig zaxz
+2229953 zaxz
+
+$ tmww summary -C Gomez -m 2
+     36 ManaPlus (Linux; ManaPlus; SDL1.2; 4144 v1.4.1.18)
+      2 ManaPlus (Windows; ManaPlus; SDL1.2; 4144 v1.4.5.10)
+$ tmww char dig gomez
+2236851 Diego
+2236851 Gomez
+2236851 Janus665
+
+$ tmww summary -C juntrip -m 2
+     13 ManaPlus (Linux; ManaPlus; SDL1.2; 4144 v1.4.1.18)
+      1 Mana/0.6.1 (Linux; mana)
+$ tmww char dig juntrip
+2237749 juntrip
+
+$ tmww summary -C goatze -m 2
+     11 ManaPlus (Linux; ManaPlus; SDL1.2; 4144 v1.4.1.18)
+      1 ManaPlus (Windows; The Mana World; SDL1.2; 4144 v1.4.4.12)
+$ tmww char dig goatze
+2181194 goatze
+2181194 wilddawg
+
+$ tmww summary -c DarcWynd -m 2
+     10 ManaPlus (Linux; The Mana World; SDL1.2; 4144 v1.4.1.18)
+      1 ManaPlus (Windows; The Mana World; SDL1.2; 4144 v1.4.4.12)
+$ tmww char dig darcwynd
+2237736 DarcWynd
+
+$ tmww summary -c Prezmyra -m 2
+      8 ManaPlus (Linux; ManaPlus; SDL1.2; 4144 v1.4.3.29)
+      6 ManaPlus (Linux; ManaPlus; SDL1.2; 4144 v1.4.1.18)
+$ tmww char dig prezmyra
+2222597 Anamnestra
+2222597 Lady Skeleton
+2222597 Prezmyra
+2222597 Zenianthe
+
+checking possible scheduled botting
+-----------------------------------
+
+$ tmww average -p monique -m 2
+MTWTFSS 012345678901234567890123
+▆▁▂▂▁▇▃ ▅▃▂▁▁▁▁▁▁▂▄▇▅▃▂▂▂▂▃▃▃▃▃▅
+$ tmww average -rd 30 -c zaxz
+▃▁▅▁▃▇▆ ▁▂▁▁▄▆▇▃▁......▁▁▁▁▁.▁▁▁
+$ tmww average -C Gomez -m 2
+▁▇▂▅▃▁▁ .....▃▅▃▄▄▃▄▃▃▃▂▂▂▄▃▇▆▂.
+$ tmww average -C juntrip -m 2
+▂▁▄▇▃▁▂ ▁▁▂▁▄▆▇▆▄▃▂▂▂▁▁▁▁▂▂▂▁▁▁▁
+$ tmww average -C goatze -m 2
+▁▁▃▁▄▄▇ ▄▂..........▁▁▂▃▄▅▃▃▄▅▇▅
+$ tmww average -C Prezmyra -m 2
+▄.▄▇▂▂▄ ...▁▁....▂▁▁▂▅▇▄▂▁▁▁....
+$ tmww average -C DarcWynd -m 2
+▁▁▂▁▂▇▂ ▁▁▄▇▅▃▁▁▁▁▁▁▁▂▂▂▁▁▃▂▁...
+
+Active GMs average times online:
+
+$ tmww average -d 30 -p prsm
+▂▃▁▁▅▁▇ ▆▁..............▁▃▃▃▃▂▃▇
+$ tmww average -d 30 -p sd
+▆▄▃▇▄▁▃ ▁...........▂▁▁▂▄▇▄▂▃▄▄▃
+$ tmww average -d 30 -p narus
+▇.....▄ ▇▁....................▃▁
+$ tmww average -d 30 -p veryape
+▂▁▃▆▇▃▁ ▃▁▁.....▁..▁▁▁▂▃▃▃▂▃▅▆▇▆
+
+$ tmww monthly -C zaxz -rd 30
+yyyy-mm 1234567890123456789012345678901
+2014-05 -------▁▁▁▁▁▁▁▁▁▂▂▁▁▁▁▁▁▁▁▁▁▁▁▁
+2014-06 ▁▁▁▁▂▁-------------------------
+$ tmww monthly -C juntrip -d 30
+2014-05 -------▃▂▁▁▁.▅▇▂▁▁▂▁▁▅▇▃▄▇▄▂...
+2014-06 ...▅▄.-------------------------
+$ tmww monthly -C goatze -d 30
+2014-05 -------.▁▁▂▁▁▁▁▁▂▂▁▁▂▁▁▁▁......
+2014-06 ..▁.▁▁-------------------------
+$ tmww monthly -C Gomez -d 30
+2014-05 -------▁▁▁.▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+2014-06 ▁▁▁▁▁.-------------------------
+
+$ tmww daily -C goatze -rf 2014-05-09 -t 2014-05-25
+yyyy-mm/dd dow 012345678901234567890123
+2014-05/09 Fri ................▁▇▂.▃▇▅.
+2014-05/10 Sat ...................▁.▄▇▇
+2014-05/11 Sun ▄.............▂▇▇▇▇▁.▄▇▇
+2014-05/12 Mon ▅..................▅▄...
+2014-05/13 Tue .......................▄
+2014-05/14 Wed ▃.....................▆▃
+2014-05/15 Thu ......................▁▄
+2014-05/16 Fri .....................▁▇▇
+2014-05/17 Sat ▇▂............▃▄.▃..▂▇▇▃
+2014-05/18 Sun ..............▁▇▇▇▇▇▇▇▆.
+2014-05/19 Mon .................▁..▁▁.▂
+2014-05/20 Tue ▃.......................
+2014-05/21 Wed ................▃▇▇▇▇▇▇▂
+2014-05/22 Thu ................▄▄..▃▃.▂
+2014-05/23 Fri ▇▅..........▁▅.....▃▄.▂.
+2014-05/24 Sat ................▃▇▄...▅▁
+2014-05/25 Sun ..............▁▃........
+
+$ tmww daily -C Gomez -rd 20
+yyyy-mm/dd dow 012345678901234567890123
+2014-05/18 Sun ...................▄▇▂..
+2014-05/19 Mon .....▁▁..▂.......▄▇▂....
+2014-05/20 Tue ......▂......▅▄..▁..▆...
+2014-05/21 Wed .......▁..▁▂............
+2014-05/22 Thu .....▃.▄.▂......▁.▃..▁..
+2014-05/23 Fri ......▂.▁▃.▃.▁....▂..▄..
+2014-05/24 Sat .....▄▃.▂▂▆▂...▁........
+2014-05/25 Sun .....▂▂▁▁▂▄....▂▂.......
+2014-05/26 Mon .....▂▃.................
+2014-05/27 Tue ....-.▁.▁▁..............
+2014-05/28 Wed ....................▄▅..
+2014-05/29 Thu ........▁.....▂.........
+2014-05/30 Fri .......▁...▂.▂..........
+2014-05/31 Sat ...............▁▂.......
+2014-06/01 Sun ..............▁▄..▁▄▃...
+2014-06/02 Mon .......▁..▃...▃▁.....▂..
+2014-06/03 Tue .....▂▆▆▂..........▁▄...
+2014-06/04 Wed ........▁..▂...▂....▂▅▄.
+2014-06/05 Thu ......▅▃.........▁▃..▃..
+2014-06/06 Fri .-----------------------
+
+$ tmww daily -C DarcWynd -rd 20
+yyyy-mm/dd dow 012345678901234567890123
+2014-05/18 Sun ........................
+2014-05/19 Mon ........................
+2014-05/20 Tue ........................
+2014-05/21 Wed ..▂▇▇▃..................
+2014-05/22 Thu ...▁▄...................
+2014-05/23 Fri ..▃▇▁.............▄▁....
+2014-05/24 Sat ..▁▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▁...
+2014-05/25 Sun .▃▂▇▃...................
+2014-05/26 Mon ...▁▆...................
+2014-05/27 Tue ..▁.-...................
+2014-05/28 Wed ..▁▅....................
+2014-05/29 Thu ..▄.....................
+2014-05/30 Fri ........................
+2014-05/31 Sat ........................
+2014-06/01 Sun ...▃....................
+2014-06/02 Mon ........................
+2014-06/03 Tue ........................
+2014-06/04 Wed ........................
+2014-06/05 Thu ........................
+2014-06/06 Fri .-----------------------
+
+$ tmww daily -rd 30 -c zaxz
+yyyy-mm/dd dow 012345678901234567890123
+2014-05/08 Thu ...▃▆▂...........▃.▃.▁▁▁
+2014-05/09 Fri ▁..▁▂▆.................▁
+2014-05/10 Sat .....▃▆▄...............▁
+2014-05/11 Sun ▆▇▂..▂▇▁................
+2014-05/12 Mon .....▁..........▃.......
+2014-05/13 Tue ......▃▅▁........▁▅.....
+2014-05/14 Wed ....▅▇▆▆................
+2014-05/15 Thu ..▃.....................
+2014-05/16 Fri ....▃▇▇.................
+2014-05/17 Sat ....▄▄▄▆▃........▄▇▃....
+2014-05/18 Sun ....▂▇▇▇▄..............▂
+2014-05/19 Mon ▆▅▅▄....................
+2014-05/20 Tue .▄▁.▂▆▂.................
+2014-05/21 Wed ....▂▇▇▇▁...............
+2014-05/22 Thu .................▁.▁....
+2014-05/23 Fri ▁▁..▂▇▄.................
+2014-05/24 Sat ....▄▃▇▅▁......▃▅.......
+2014-05/25 Sun ....▆▇▅.................
+2014-05/26 Mon ....▆▄▅.................
+2014-05/27 Tue ....-..▁................
+2014-05/28 Wed ....▃▆▄.................
+2014-05/29 Thu .▃...▂▇▁................
+2014-05/30 Fri ....▃▇▆.................
+2014-05/31 Sat ....▃▂▄.................
+2014-06/01 Sun ....▁▆▅.................
+2014-06/02 Mon ....▅▆▆.................
+2014-06/03 Tue .....▂▅.................
+2014-06/04 Wed ....▆▄▅.................
+2014-06/05 Thu .-----------------------
+
+results
+-------
+
+That's probably rude to suspect someone playing on certain times to run bot
+there's definitely some source of income for epic hoarders like
+monique/darkwind ( Tinkerbell: "Here is most of our collection" -
+https://forums.themanaworld.org/viewtopic.php?p=120310#p120310 ).
+
+If version results are correct (which mean they are not crafted by someone to
+drop shadow on darkwind, because they seem to be correct), seems like accounts
+under chars DarcWynd, zaxz and Prezmyra (with char "Lady Skeleton" with "Lady
+Skeleton." as known monique/darkwind's alt) belongs to monique/darkwind and two
+of them (DarcWynd and zaxz) might be used for scheduled bot farming/leveling
+possibly with autoreply.
+

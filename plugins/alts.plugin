@@ -1,0 +1,234 @@
+#!/bin/sh
+# tmww plugin: alts
+# whatis: alts lookup facility
+# conflicts: -
+# depends: jq (subcommand player)
+# recommends: python-jsonschema for "player validate"
+
+# this file is part of tmww - the mana world watcher
+# willee, 2012-2014
+# GPL v3
+
+# error codes:
+# 1 -- parameters error
+# 2 -- tool missing
+# 3 -- config/database file missing
+
+# check if not run as plugin
+if [ "$TMWW_PLUGINS" != "yes" ] ; then
+    echo >&2 "This script is tmww plugin and rely heavily on it's facilities."
+    exit 1
+fi
+
+help_alts() {
+    cat << EOF
+alts -- alts lookup facility. Set of commands to handle
+    characters/players/groups/whatever. In short: players.db -> records ->
+    fields -> values.  Each record has "player" alias. Character names with
+    unknown account ids are listed in "alts" field.  Every other known char is
+    referenced over "accounts" field. Fields other than this are not fixed.
+
+    char/party del isn't implemented
+
+Command line options:
+    subcommand: char -- character database handler
+        add id ID char CHAR -- add id/char pair to db; write conflicts to log
+        resolve id ID char CHAR -- same as add + resolve all matched alts in playerdb into accounts
+        grep [ chars | ids ] REGEXP -- search known chars, output chars/chars with ids
+        fuzzy [ chars | ids ] PATTERN -- case-insensitive levenshtein distance 1 search
+        get [ [ id ] by char CHAR ] -- get CHAR acc_id
+        show [ chars | ids | parties ] by id ID -- get all known chars on acc_id
+        show [ chars | ids | parties ] by char CHAR -- get all known chars on same account as CHAR
+        dig REGEXP -- grep + show ids by ids from grep matches
+        sanitize -- remove older duplicate entries; write conflicts to log
+        merge FILENAME -- put FILENAME into db; write conflicts to log
+    subcommand: party -- party database handler
+        add party PARTY char CHAR
+        get [ by char ] CHAR -- get char's party name
+        show [ ids | chars | players ] by { party PARTY | char CHAR } -- party members lookup
+        { grep | fuzzy } PATTERN -- grep/approximate grep party name
+        sanitize -- show duplicates in partydb
+        merge FILENAME -- put FILENAME into db; conflicts pushed to db and listed in merge log
+    subcommand: player -- players database handler
+        ref -- field types quick reference
+        create PLAYER
+        remove PLAYER
+        rename PLAYER to PLAYER
+        add PLAYER FIELD value VALUE
+        add PLAYER FIELD element VALUE -- adding alts will automatically resolve charname into account
+        resolve PLAYER -- resolve all player alts into accounts
+        del PLAYER FIELD
+        del PLAYER FIELD element VALUE
+        get { CHAR | by { char CHAR | id ACCID } } -- dereference player entry
+        ids PLAYER -- print all known associated account IDs
+        show [ ids | chars | parties ] by { char CHAR | id CHAR | player PLAYER } -- lookup
+        list with FIELD
+        list with { FIELD [ not ] as VALUE | VALUE [ not ] in FIELD }+
+        dump PLAYER -- dump JSONline record of PLAYER; tmww player dump veryape
+        record NUMBER -- access players db record by it's order number
+        append STRING -- NOT SAFE append JSON player record of same format as with dump operation to end of dbplayers
+            you should try sanitize operation if you not sure if there are duplicate entries or fields
+        keys PLAYER -- tmww player keys veryape
+        field PLAYER FIELD [FIELD]... -- tmww player field veryape name aka
+        search STRING -- simple search in all fields
+        sanitize -- remove keys with 0 length - empty arrays and hashes with null value
+            resolve alts into accounts, report duplicate accounts and alts
+        lregen -- regenerate shortened playerdb version if limiteddb is in use
+        FIXME merge FILENAME -- simple merge player records + sanitize
+        FIXME forcemerge FILENAME -- replace duplicated records with new ones + sanitize
+EOF
+}
+
+[ "$TMWW_PLUGINHELP" = "yes" ] && help_alts && return 0
+
+[ "${TMWW_LIMITED}" = "yes" ] && playerdb="${limiteddb}"
+
+# using temp dir for char/party add operations (used with sniffer too)
+check_dir "$TMWW_PRIVTMP"
+
+requireplugin alts.lib.sh || return 1
+
+[ "${TMWW_PLUGINEXPORT}" = "yes" ] && return 0
+
+#
+# char
+#
+#
+
+alts_parse_char () {
+    local subcommand
+    subcommand="$1"; shift
+    case "${subcommand}" in
+        add)    func_char_add "$@" ;;
+        resolve) func_char_resolve "$@" ;;
+        del)    echo hey.. just do it by hand. you have access, don\'t you? ; ;;
+        # case insensitive grep; regexps allowed
+        grep)   func_char_grep "$@" ;;
+        # approximate grep using agrep
+        agrep)  func_char_agrep "$@" ;;
+        # regexps disallowed (as lot of chars too)
+        fuzzy)  func_char_fuzzy "$@" ;;
+        get)    func_char_get "$@" ;;
+        dig)    func_char_dig "$@" ;;
+        show)   func_char_show "$@" ;;
+        sanitize) func_char_sanitize "$@" ;;
+        merge)  func_char_merge "$@" ;;
+        '')     error_missing; return 1; ;;
+        *)      error_incorrect; return 1; ;;
+    esac
+}
+
+#
+# party
+#
+#
+
+alts_parse_party () {
+    local subcommand
+    subcommand="$1"; shift
+    case "${subcommand}" in
+        add)    func_party_add "$@" ;;
+        del)    echo hey.. just do it by hand. you do have access, don\'t you? ; ;;
+        # case insensitive grep; regexps allowed
+        grep)   func_party_grep "$@" ;;
+        # approximate grep using agrep
+        agrep)  func_party_agrep "$@" ;;
+        # regexps disallowed (as lot of chars too)
+        fuzzy)  func_party_fuzzy "$@" ;;
+        dig)    func_party_dig "$@" ;;
+        get)    func_party_get "$@" ;;
+        show)   func_party_show "$@" ;;
+        sanitize) func_party_sanitize "$@" ;;
+        merge)  func_party_merge "$@" ;;
+        '')     error_missing; return 1; ;;
+        *)      error_incorrect; return 1; ;;
+    esac
+}
+
+#
+# player
+#
+#
+
+alts_parse_player () {
+    local subcommand
+    subcommand="$1"; shift
+    case "${subcommand}" in
+        ref)    func_player_ref "$@" ;;
+        create)
+            [ "$TMWW_LIMITED" = "yes" ] && return
+            func_player_create "$@"
+            ;;
+        remove)
+            [ "$TMWW_LIMITED" = "yes" ] && return
+            func_player_remove "$@"
+            ;;
+        append)
+            [ "$TMWW_LIMITED" = "yes" ] && return
+            func_player_append "$@"
+            ;;
+        rename)
+            [ "$TMWW_LIMITED" = "yes" ] && return
+            func_player_rename "$@"
+            ;;
+        add)
+            [ "$TMWW_LIMITED" = "yes" ] && return
+            func_player_add "$@"
+            ;;
+        resolve)
+            [ "$TMWW_LIMITED" = "yes" ] && return
+            func_player_resolve "$@"
+            ;;
+        del)
+            [ "$TMWW_LIMITED" = "yes" ] && return
+            func_player_del "$@"
+            ;;
+        get)    func_player_get "$@" ;;
+        show)   func_player_show "$@" ;;
+        list)   func_player_list "$@" ;;
+        nlist)  func_player_nlist "$@" ;;
+        dump)   func_player_dump "$@" ;;
+        record) func_player_record "$@" ;;
+        keys)   func_player_keys "$@" ;;
+        ids)    func_player_ids "$@" ;;
+        field)  func_player_field "$@" ;;
+        search) func_player_search "$@" ;;
+        sanitize)
+            [ "$TMWW_LIMITED" = "yes" ] && return
+            func_player_sanitize "$@" ;;
+        lregen)
+            [ "$TMWW_LIMITED" = "yes" ] && return
+            func_player_lregen "$@" ;;
+        merge)
+            [ "$TMWW_LIMITED" = "yes" ] && return
+            echo TODO merge handler
+            # func_player_merge "$@"
+            ;;
+        '') error_missing; return 1; ;;
+        *) error_incorrect; return 1; ;;
+    esac
+}
+
+#
+# main
+#
+#
+
+alts_main_parser() {
+    local subcommand
+    subcommand="$1"; shift
+    case "${subcommand}" in 
+        char)       alts_parse_char "$@" ;;
+        party)      alts_parse_party "$@" ;;
+        player)     alts_parse_player "$@" ;;
+        arseoscope) func_arseoscope "$@" ;;
+        '')         error_missing; return 1 ;;
+        *)          error_incorrect; return 1 ;;
+    esac
+}
+
+alts_main_parser "$@"
+[ $err_flag -eq 1 ] && return 1
+
+return 0
+

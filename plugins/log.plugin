@@ -1,0 +1,66 @@
+#!/bin/sh
+# tmww plugin: log
+# whatis: log online activity (who logged on/off and when)
+# conflicts: versionlog, versiontable
+# depends: -
+# recommends: versionlog, versiontable
+
+# this file is part of tmww - the mana world watcher
+# willee, 2012-2014
+# GPL v3
+
+# check if not run as plugin
+if [ "$TMWW_PLUGINS" != "yes" ] ; then
+    echo >&2 "This script is tmww plugin and rely heavily on it's facilities."
+    exit 1
+fi
+
+help_log() {
+    cat << EOF
+log -- log online activity (who logged on/off and when)
+
+    IMPORTANT: run "log" action only after you performed "fetch"
+
+    example crontab entry:
+    */5 * * * * /path/to/tmww -a log -d 240 tmw.org >/dev/null 2>&1
+
+Command line options: -- (no commands)
+EOF
+}
+
+[ "$TMWW_PLUGINHELP" = "yes" ] && help_log && return 0
+[ "$TMWW_PLUGINEXPORT" = "yes" ] && return 0
+
+TMWW_LOGLOCK="${TMWW_LOCK}/tmww-log-${servername}"
+
+set_log_lock() {
+    check_lock "log" "${TMWW_LOGLOCK}" 35
+}
+
+unset_log_lock() {
+    rmdir "${TMWW_LOGLOCK}" 2>/dev/null
+}
+
+# check if nothing to do
+[ ! -s "${list_logon}" ] && [ ! -s "${list_logoff}" ] && return 0
+
+set_log_lock
+
+# prepare report file
+TMWW_LOGPATH="${TMWW_LOGPATH:-${HOME}/log/tmww}"
+log_path="${TMWW_LOGPATH}/${servername}/$(date -u +%Y-%m)"
+check_dir "$log_path"
+log_file="$log_path/$(date -u +%d).yml"
+
+exec 3>&1 1>>${log_file}
+
+echo "- time: \"${servertime}\""
+[ -s "$list_logon" ] && echo "  logon: [ $( make_qcsv < "${list_logon}" ) ]"
+[ -s "$list_logoff" ] && echo "  logoff: [ $( make_qcsv < "${list_logoff}" ) ]"
+
+exec 1>&3 3>&-
+
+unset_log_lock
+
+return 0
+

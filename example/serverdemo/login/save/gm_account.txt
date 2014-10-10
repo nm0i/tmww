@@ -1,0 +1,4 @@
+// <account ID> <level>
+// 2014-06-29 21:32:11: 'ladmin' GM level on account 2000000 'newbie' (previous level: 0)
+2000000 80
+2000002 80

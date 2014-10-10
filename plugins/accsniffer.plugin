@@ -1,0 +1,98 @@
+#!/bin/sh
+# tmww plugin: accsniffer
+# whatis: wrapper around accsniffer util
+# conflicts: pysniffer
+# depends: alts
+# recommends: -
+
+# this file is part of tmww - the mana world watcher
+# willee, 2012-2014
+# GPL v3
+
+# check if not run as plugin
+if [ "$TMWW_PLUGINS" != "yes" ] ; then
+    echo >&2 "This script is tmww plugin and rely heavily on it's facilities."
+    exit 1
+fi
+
+help_accsniffer() {
+    cat << EOF
+accsniffer -- wrapper around accsniffer util
+    Listen on all traffic from server, cut account ids, call alts plugin
+    to store char info. One sniffer per server.
+
+    Required setup for tcpick same as e.g. wireshark - changing tcpick
+    group/adding user in group and setting tcpick capabilities:
+    # setcap cap_net_raw,cap_net_admin=eip /usr/sbin/tcpick
+    # usermod -a -G wireshark yourmom
+    # chgrp wireshark /usr/sbin/tcpick
+
+    Sniffer will crash if interface goes down. Don't forget to stop/start.
+
+Command line options:
+    -1 -- start | stop | status
+EOF
+}
+
+[ "$TMWW_PLUGINHELP" = "yes" ] && help_accsniffer && return 0
+# if someone by mistake export accsniffer
+[ "$TMWW_PLUGINEXPORT" = "yes" ] && return 0
+
+check_conflicts() {
+    if [ -f ${LOCK}/sniffer.$servername ]; then
+        error "Other sniffer listening on $servername. Aborting!"
+        return 1
+    fi
+}
+
+[ -z "${servername}" ] && { error "No servername defined. Aborting."; exit 1; }
+
+# options parser
+set -- $plugin_options
+case "$1" in 
+    start)
+        if check_conflicts; then
+            ${TMWW_UTILPATH}/accsniffer "${servername}" "${config}" >/dev/null 2>&1 &
+            # if you see different kinds of errors like shell synthax error
+            # reports , kill accsniffer process group by hand, stop and start
+            # again
+            # not sure why it happen, so added sleep as measure
+            sleep 2
+            sniffer_pgid=$(ps -o pgid= -C accsniffer)
+            if [ -z "${sniffer_pgid}" ]; then
+                echo Run failed! Check tcpick capabilities and permissions. Aborting!
+                return 1
+            else
+                echo ${sniffer_pgid} > ${TMWW_LOCK}/sniffer.$servername
+            fi
+        fi
+        ;;
+    stop)
+        [ -f ${TMWW_LOCK}/sniffer.$servername ] && {
+            read sniffer_pgid < ${TMWW_LOCK}/sniffer.$servername
+            [ -z "${sniffer_pgid}" ] || /bin/kill -9 -- -${sniffer_pgid}
+            rm -f ${TMWW_LOCK}/sniffer.$servername
+        }
+        ;;
+    status)
+        if [ -f ${TMWW_LOCK}/sniffer.$servername ]; then
+            read sniffer_pgid < ${TMWW_LOCK}/sniffer.$servername
+            result=$( ps -Ao 'pgid=' | grep ${sniffer_pgid} )
+            if [ ! -z "${result}" ]; then
+                echo Sniffer listening on $servername
+            else
+                error "Sniffer crashed. Restart manually!"
+                return 1
+            fi
+        else
+            echo No sniffer running on $servername
+        fi
+        ;;
+    '') error_missing
+        ;;
+    *) error_incorrect
+        ;;
+esac
+
+return 0
+

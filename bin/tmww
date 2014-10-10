@@ -1,0 +1,995 @@
+#!/bin/sh
+# tmww -- monitor/fetch themanaworld online player list. Misc functions via plugins
+# http://themanaworld.org/
+# GPL 3, 2011-2014, willee
+VERSION="0.2.2"
+
+DIRCONFIG="${DIRCONFIG:-${HOME}/.config/tmww}"
+# see store_shared function for details
+usagemode=''
+
+#
+# platform dependent settings
+#
+#
+
+FETCH="/usr/bin/curl --retry 0 -s -L -m 8 --retry-delay 1"
+# FETCH="/usr/bin/wget -O - -c -t 1 -q"
+# default to shell's getopts
+GETOPTS="getopts"
+AWK="/usr/bin/gawk"
+#AWKOPTS="--posix"
+#AWK="/usr/bin/mawk"
+#AWKPARAMS="-W interactive"
+# AWK="/usr/bin/mawk"
+# GNU sed flag for extended regexps
+ESED="-r"
+# BSD sed flag for extended regexps
+# ESED="-e"
+# watch v0.3.0 from procps require ANSICAPABLE=no
+ANSICAPABLE="no"
+# tmwa character names are case insensitive, change NAMEGREP other way
+NAMEGREP="/bin/egrep -i"
+
+# remember of manual tilde expansion for custom variables
+# with "eval TMWW_VAR=${TMWW_VAR:-${sane}/defaults}"
+
+version () {
+    echo "${VERSION}"
+}
+
+help () {
+        cat << EOF
+tmww -- The Mana World Watcher script
+    version ${VERSION}
+    willee, 2012-2014, licensed under GPL v3
+
+tmww [-vhpecbrsy] [-a action] [-d delta] [config [action options]]
+    -v -- print version and exit
+    -h -- print command line options help and exit
+    -p -- list available plugins, conflicting plugins, recommentations and exit
+    -g -- output config variable; e.g. "TMWW_PLUGINPATH=test tmww -g PLUGINPATH"
+    -u -- disallow reusing external variables, e.g. "TMWW_PLUGINPATH=test tmww -ug PLUGINPATH"
+    -z -- dump aliases from zsh completions
+    -e -- output executed plugin names and exit error codes - override VERBOSE; set to "yes"
+    -c -- black & white - override COLORS; set to "no"
+    -b -- unset bold text attribute for service messages - override HIGHLIGHT; set to "no"
+    -r -- override RING; set to "yes"
+    -s -- override RING; set to "no"
+    -y -- override DRYRUN; set to "yes"
+    -a -- override CMDACTION
+        options -h and -v after specified action will display help/version for this action
+    -d -- override DELTA for downloading players list
+        delta is delay in seconds from last download allowed to skip update
+EOF
+}
+
+#
+# read positional params
+#
+#
+
+# getopts:  pros - check incorrect params, parse quoted values
+#           cons - no long options
+# see options description in help()
+
+show_plugins=''; get_variable=''
+override_action=''; override_delta=''
+override_silent=''; override_ring=''
+override_dryrun=''; override_verbose=''
+override_colors=''; override_bold=''
+env_reuse='yes'; dump_aliases=''
+
+opts="vhpg:uza:d:sryecb"
+
+OPTIND=1
+while $GETOPTS $opts opt ; do
+    case "$opt" in
+        v)  version
+            exit 0
+            ;;
+        h)  if [ ! -z "$override_action" ]; then
+                TMWW_PLUGINHELP="yes"
+            else
+                help && exit 0
+            fi
+            ;;
+        p)  show_plugins="yes" ;;
+        g)  get_variable="$OPTARG" ;;
+        u)  env_reuse="no" ;;
+        z)  dump_aliases="yes" ;;
+        a)  override_action="$OPTARG" ;;
+        d)  override_delta="$OPTARG" ;;
+        s)  override_silent="true" ;;
+        r)  override_ring="true" ;;
+        y)  override_dryrun="true" ;;
+        e)  override_verbose="true" ;;
+        c)  override_colors="true" ;;
+        b)  override_bold="true" ;;
+        *)  help
+            exit 1
+            ;;
+    esac
+done
+
+# read config name
+shift $(expr $OPTIND - 1)
+config="default"
+if [ $# -ne 0 ]; then
+    config="$1"
+    shift
+fi
+
+# rest is plugin options
+plugin_options="$@"
+
+# search config in work dir, then in default location
+if [ ! -f "${config}" ]; then
+    if [ -f "${DIRCONFIG}/${config}.conf" ]; then
+        config="${DIRCONFIG}/${config}.conf"
+    else
+        echo >&2 "\"${config}\" config file does not exists! Aborting."
+        exit 1
+    fi
+fi
+
+#
+# read, validate and evaluate config
+#
+#
+
+# see wrappers process_config and process_section
+# for general params
+#   set $process_section to 0
+#   and $section_name='none'
+# output: $configdata -- ready for eval
+#
+# for section inner params
+#   set $process_section to 1
+#   and $section_name
+# output: $configdata -- filtered lines for next processing
+read_config () {
+configdata=$(cat $config | ${AWK} ${AWKOPTS} -v process_section="${process_section}" \
+    -v section_name="${section_name}" -v config="${config}" \
+    -v env_reuse="${env_reuse}" -- '
+    function process_record() {
+    # empty line or comment
+        if (($0 ~ /^\s*#/) || ! NF) return
+    # check section start
+        if ($2 == "{") {
+            if ((NF > 2) || (sect == 1)) exit FNR
+            sect = 1
+            if (( process_section == 1 ) && ( $1 == section_name )) {
+                in_target_section = 1 ; }
+            else in_target_section = 0
+            return
+        }
+    # check section end
+        if ($1 == "}") {
+            if ((NF > 1) || (sect == 0)) exit FNR
+            sect = 0
+            if (in_target_section == 1) exit 0
+            return
+        }
+    # non section
+        if ( sect == 0 ) {
+            # check include keyword
+            if (NF < 2 ) exit FNR
+            if ($1 == "INCLUDE") {
+                # skip nested includes
+                if (incl != 0) return
+                incl = 1; inc_file = prefix $2
+                return
+            }
+        }
+        if (( sect == 0 ) && ( process_section == 0 )) {
+            # if ($1 !~ /^[_a-zA-Z0-9]*$/) exit FNR
+            if ($0 ~ /"/) {
+            # process quoted value
+            # protect backslashes, then quotes
+                printf "TMWW_%s=",$1 ; t1 = $1; $1 = "";
+                # check quotes, shield internal quotes
+                if ((sub(/"\s*$/,"",$NF) == 0) || (sub(/^\s*"/,"",$2) == 0))
+                    exit FNR
+                gsub("\\\\","\\\\\\\\"); gsub("\"","\\\"")
+                t2 = substr($0,2)
+                if ( env_reuse == "yes" ) printf "${TMWW_%s:-\"%s\"}\n",t1,t2
+                else printf "\"%s\"\n",t2
+            } else {
+            # process unquoted value
+            # this goes unquoted and expands tilde
+            # thus checking all path-nonsafe characters
+                # if ((NF > 2) || ($2 !~ /^[a-zA-Z0-9.\/~_-]*$/)) exit FNR
+                if (NF > 2) exit FNR
+                printf "TMWW_%s=",$1
+                if ( env_reuse == "yes" ) printf "${TMWW_%s:-%s}\n",$1,$2
+                else printf "%s\n",$2
+            }
+        }
+    # inside section
+        if (( in_target_section == 1 ) && ( process_section == 1 )) {
+            # empty line or comment
+            if (($0 ~ /^\s*#/) || ! NF) return
+            gsub("\\\\","\\\\\\\\"); print
+        }
+    }
+    BEGIN { sect = 0; incl = 0
+        prefix=config; sub("/[^/]*$","/",prefix) }
+    {
+        process_record()
+        while ((incl != 0) && ((getline < inc_file) == 1 )) {
+            process_record()
+        }
+        incl = 0
+    }
+    END { if ( sect == 1 ) exit FNR }
+')
+errorcode=$? 
+# check parse status; print number of line if error
+[ $errorcode -ne 0 ] && {
+    echo "${config}: invalid line ${errorcode}. Aborting." ; exit 1 ; }
+}
+
+# read config variables; no params
+process_config () {
+    process_section=0
+    section_name="none"
+    read_config
+}
+
+# read section; $1 -- section name
+process_section () {
+    process_section=1
+    section_name="$1"
+    read_config
+}
+
+process_config
+
+[ "${env_reuse}" = "yes" ] || {
+    # clearing variable with default values from outer space data
+    TMWW_LINK=''; TMWW_SERVERNAME=''; TMWW_CHARNAME=''
+    TMWW_INSTANCE=''; TMWW_DELTA=''; TMWW_DRYRUN=''
+    TMWW_VERBOSE=''; TMWW_PLUGINPATH=''; TMWW_UTILPATH=''
+    TMWW_LOCK=''; TMWW_TMP=''; TMWW_PRIVTMP=''
+    TMWW_LISTPATH=''; TMWW_HIGHLIGHT=''; TMWW_ANSICAPABLE=''
+    TMWW_COLORS=''; TMWW_RING=''; TMWW_PLAY=''
+    TMWW_PLAYPATH=''
+}
+
+# set config variables
+eval "${configdata}"
+
+#
+# defaults
+#
+#
+
+# see options meaning in tmww-config(5)
+
+TMWW_LINK="${TMWW_LINK:-http://server.themanaworld.org/online.html}"
+TMWW_SERVERNAME="${TMWW_SERVERNAME:-server.themanaworld.org}"
+TMWW_CHARNAME="${TMWW_CHARNAME:-}"
+TMWW_INSTANCE="${TMWW_INSTANCE:-common}"
+TMWW_DELTA="${TMWW_DELTA:-20}"
+TMWW_DRYRUN="${TMWW_DRYRUN:-no}"
+TMWW_VERBOSE="${TMWW_VERBOSE:-no}"
+TMWW_PLUGINPATH="${TMWW_PLUGINPATH:-${DIRCONFIG}/plugins}"
+TMWW_UTILPATH="${TMWW_UTILPATH:-${DIRCONFIG}/utils}"
+TMWW_LOCK="${TMWW_LOCK:-/var/lock}"
+TMWW_TMP="${TMWW_TMP:-/tmp}"
+TMWW_PRIVTMP="${TMWW_PRIVTMP:-${HOME}/.tmp/tmww}"
+TMWW_LISTPATH="${TMWW_LISTPATH:-${DIRCONFIG}/lists}"
+TMWW_HIGHLIGHT="${TMWW_HIGHLIGHT:-no}"
+TMWW_ANSICAPABLE="${TMWW_ANSICAPABLE:-no}"
+TMWW_COLORS="${TMWW_COLORS:-yes}"
+TMWW_RING="${TMWW_RING:-no}"
+TMWW_PLAY="${TMWW_PLAY:-/usr/bin/play}"
+TMWW_PLAYPATH="${TMWW_PLAYPATH:-${HOME}/.sound}"
+
+# dump aliases from zsh completion
+[ -n "${dump_aliases}" ] && {
+    cd "${TMWW_PLUGINPATH}" && grep '^alias ' *.zsh
+    exit 0
+}
+
+# get variable from config
+[ -n "${get_variable}" ] && {
+    eval a="\$TMWW_${get_variable}"
+    if [ -n "$a" ]; then
+        echo $a; exit 0
+    else
+        exit 1
+    fi
+}
+
+# list plugins
+[ "${show_plugins}" = "yes" ] && {
+    cd "$TMWW_PLUGINPATH" &&
+        $AWK -- "FNR>10{nextfile}/^# whatis:/ {\$1=\$2=\"\";sub(\".plugin$\",\"\",FILENAME); \
+            printf \"%-16s%s\\n\",FILENAME,\$0;nextfile}" *.plugin
+    # note: make sure awk has nextfile command, just remove if it hasn't
+    exit 0
+}
+
+# action is overridden closer to execution to invalidate config defined prefix
+[ -z "$override_delta" ] || TMWW_DELTA=$override_delta
+[ -z "$override_ring" ] || TMWW_RING="yes"
+[ -z "$override_silent" ] || TMWW_RING="no"
+[ -z "$override_dryrun" ] || TMWW_DRYRUN="yes"
+[ -z "$override_verbose" ] || TMWW_VERBOSE="yes"
+[ -z "$override_colors" ] || TMWW_COLORS="no"
+[ -z "$override_bold" ] || TMWW_HIGHLIGHT="no"
+
+#
+# colors
+#
+#
+
+# set highlighting
+if [ "$TMWW_HIGHLIGHT" = "yes" ]; then
+    hlon='\033[1m'; hloff='\033[0m'
+else
+    hlon=''; hloff=''
+fi
+
+# set colors
+if [ "${TMWW_COLORS}" = "yes" ]; then
+    color_off="\033[0m" &&
+    if [ "$ANSICAPABLE" = "yes" ]; then
+        # color_cyan=$(tput setaf 6)
+        # back_cyan=$(tput setab 6)
+        # color_off=$(tput op)
+        color_black="\033[38;5;0m"
+        color_red="\033[38;5;1m"
+        color_green="\033[38;5;2m"
+        color_yellow="\033[38;5;3m"
+        color_blue="\033[38;5;4m"
+        color_magenta="\033[38;5;5m"
+        color_cyan="\033[38;5;6m"
+        color_white="\033[38;5;7m"
+        color_grey="\033[38;5;8m"
+        color_orange="\033[38;5;9m"
+        back_black="\033[48;5;0m"
+        back_red="\033[48;5;1m"
+        back_green="\033[48;5;2m"
+        back_yellow="\033[48;5;3m"
+        back_blue="\033[48;5;4m"
+        back_magenta="\033[48;5;5m"
+        back_cyan="\033[48;5;6m"
+        back_white="\033[48;5;7m"
+        back_grey="\033[48;5;8m"
+        back_orange="\033[48;5;9m"
+    else
+        # color definitions work with watch 0.3.0
+        # color_cyan=$(tput setf 3)
+        color_black="\033[30m"
+        color_blue="\033[34m"
+        color_green="\033[32m"
+        color_cyan="\033[36m"
+        color_red="\033[31m"
+        color_magenta="\033[35m"
+        color_yellow="\033[33m"
+        color_white="\033[37m"
+    fi
+else
+    color_off=''
+    color_black=''; color_red=''; color_green=''; color_yellow=''
+    color_blue=''; color_magenta=''; color_cyan=''; color_white=''
+    color_grey=''; color_orange='' 
+    back_black=''; back_red=''; back_green=''; back_yellow=''
+    back_blue=''; back_magenta=''; back_cyan=''; back_white=''
+    back_grey=''; back_orange='' 
+fi
+
+#
+# helper functions
+#
+#
+
+verbose() {
+    [ "$TMWW_VERBOSE" = "yes" ] && printf >&2 "${color_green}%s${color_off}\n" "$*"
+}
+
+warning() { printf >&2 "%s\n" "$*" ; }
+err_flag=0
+error() { printf >&2 "${color_red}%s${color_off}\n" "$*" ; err_flag=1; }
+error_params() { error "$*: ${plugin_options}"; }
+error_date() { error_params "Incorrect date"; }
+error_missing() { error_params "Missing parameter"; }
+error_incorrect() { error_params "Incorrect parameter"; }
+error_toomuch() { error_params "Too much parameters"; }
+
+check_string_chars() {
+    case "$1" in
+        $2) error_params "$3"; return 1; ;;
+    esac
+}
+
+# escaping chars for extended regexp
+sed_chars() { printf "%s" "$1" | sed ${ESED} 's/\\/\\\\/g;s/([.*"+!@#$%^/?[{|()])/\\\1/g'; }
+
+#
+# general checks
+#
+#
+
+TMWW_TMP="${TMWW_TMP}/tmww"
+
+# servername
+if [ ! -z "$TMWW_SERVERNAME" ]; then
+    servername="$TMWW_SERVERNAME"
+else
+    # validate link
+    case "$TMWW_LINK" in
+        http://*/?*.*) : ;;
+        *)  error "Invalid link: ${TMWW_LINK} . Aborting."; exit 1
+            ;;
+    esac
+    # extract server name
+    servername="${TMWW_LINK#http://}"
+    servername="${servername%%/*}"
+fi
+
+# check ring executable
+# wrapped in function to preserve main quoted params
+check_ring() {
+if [ -n "$override_ring" ] || [ "$TMWW_RING" = "yes" ]; then
+   set -- $TMWW_PLAY
+   if ! command -v "$1" >/dev/null 2>&1 ; then
+       warning "Ring binary $1 not found."
+       TMWW_RING="no"
+   fi
+fi
+}
+check_ring
+
+# raw/parsed online lists are shared and reside in TMP path
+list_raw="$TMWW_TMP/tmww-$servername-raw"
+list_online="$TMWW_TMP/tmww-$servername-online"
+# logon/logoff are personal and reside in PRIVTMP
+list_logon="$TMWW_PRIVTMP/tmww-$servername-logon"
+list_logoff="$TMWW_PRIVTMP/tmww-$servername-logoff"
+
+# per server stuff
+list_dir_server="$TMWW_LISTPATH/$servername"
+# any GM level lists extractable from online list are stored in private LISTPATH
+list_gm="$TMWW_LISTPATH/$servername/auto.gm"
+# list_dev="$TMWW_LISTPATH/$servername/auto.dev"
+# priveledged covers all online chars with any gm priv: gm, dev, admin and so on
+# not used right now
+# list_priveledged="$TMWW_TMP/tmww-$servername-priveledged"
+
+# old autolists generated from online list are personal and reside in PRIVTMP path
+# list_old_raw="$TMWW_PRIVTMP/tmww-$servername-raw.${TMWW_INSTANCE}"
+list_old_online="$TMWW_PRIVTMP/tmww-$servername-online.${TMWW_INSTANCE}"
+list_old_gm="$TMWW_PRIVTMP/tmww-$servername-gm.${TMWW_INSTANCE}"
+# list_old_dev="$TMWW_PRIVTMP/tmww-$servername-dev.${TMWW_INSTANCE}"
+# list_old_priveledged="$TMWW_PRIVTMP/tmww-$servername-priveledged.${TMWW_INSTANCE}"
+
+lcase=abcdefghijklmnopqrstuvwxyz
+ucase=ABCDEFGHIJKLMNOPQRSTUVWXYZ
+
+# included plugins list
+plugin_array=''
+
+#
+# common routines
+#
+#
+
+# cat is most simple way to preserve shared file's permissions,
+# owner and group even without ACL set; mv via rsync wasn't enough
+# feel free to fix
+store_shared() {
+    if [ "${usagemode}" = "single" ]; then
+        mv -f "$1" "$2"
+    else cat "$1" > "$2"; fi
+}
+
+# there are two options to check:
+# 1) directory with group write access so group members can remove files
+# 2) files are g+w which most probably require setting ACL
+# operations on shared files require both things but online lists sharing will
+# work even without ACL set just with files removed before write attempt
+remove_shared () {
+    rm -f "$1" || {
+        error "File $1 cannot be removed. Aborting."; exit 1 ; }
+}
+
+# convert to one player per line, extract GM list
+# this part is critical. adjust when online list format changes
+parse_raw () {
+    mkdir -p "${list_dir_server}"
+    remove_shared "${list_online}"
+    remove_shared "${list_gm}"
+    case "$TMWW_LINK" in
+        *.txt)
+            sed -n '
+                5,${
+                    /^$/q;
+                    s/ *([^)]*) \{0,2\}$//;
+                    s/\ *$//p
+                }' \
+                "$list_raw" | sort > "$list_online"
+            sed -n 's/\ *(GM) \{0,2\}$//p' "$list_raw" | sort > "$list_gm"
+            ;;
+        # else try to treat like html
+        *) 
+            sed -n '
+                s/^.*<td> *//;
+                s/<b>//;
+                s/<\/b>.*</</;
+                /<\/td>.*$/{
+                    s/&gt;/>/g; s/&lt;/</g
+                    s/<\/td>.*$//p
+                }' \
+                "$list_raw" | sort > "$list_online"
+            sed -n 's/^.*<b>//; s/<\/b>.*$//p' "$list_raw" | \
+                # sed 1d | \
+                sort > "$list_gm"
+            ;;
+    esac
+}
+
+fetch_all () {
+    [ -z "${TMWW_LINK}" -a -z "${TMWW_LINKLOCAL}" ] && {
+        error "No online list link specified in ${config} . Aborting."; exit 1 ; }
+    remove_shared "${list_raw}"
+    echo ${hlon}Fetching!${hloff}
+    # local link has priority above remote link
+    if [ -n "${TMWW_LINKLOCAL}" ]; then
+        cp -f "${TMWW_LOCALLINK}" "${list_raw}"
+    else
+        ${FETCH} ${TMWW_LINK} > "${list_raw}"
+    fi
+    if [ $? != "0" ]; then
+        error "Failed to retrieve online players list. Aborting.";
+        rm -f "$list_raw"
+        exit 1
+    fi
+    parse_raw
+}
+
+# check time from last download, redownload
+# form logon/logoff lists
+check_delta () { 
+    # fetch online list if absent
+    # OR ignore in "silent" mode or refetch after "delta" seconds
+    { [ ! -f $list_raw ] ||
+        [ $TMWW_DRYRUN != "yes" -a $(( $(date +%s) - $(stat -c %Z $list_raw) )) \
+        -gt $TMWW_DELTA 2>/dev/null ] ; } && \
+            fetch_all
+    servertime=$( sed -n 's/.*Online.*\(..:..:..\).*/\1/p' $list_raw )
+    playersnum=$( wc -l < "$list_online" )
+    [ -z "$servertime" ] && {
+        error "Download incomplete! Aborting."; exit 1; }
+    [ -f "$list_old_online" ] || touch "$list_old_online"
+    [ "$TMWW_DRYRUN" = "yes" ] || {
+        comm_23 "$list_online" "$list_old_online" > "$list_logon"
+        comm_23 "$list_old_online" "$list_online" > "$list_logoff"
+        cp "$list_online" "$list_old_online"
+    }
+}
+
+# $1 -- trap name (to prevent duplicates)
+# $2 -- trap command
+# $3 $* -- signals
+trap_add() {
+    # stay silent on incorrect options and on fail to set trap
+    [ -z "$3" ] && return
+    printf "%s" "${trap_array}" | grep -qw "$1" 2>/dev/null && return 0
+    trap_array="${trap_array} $1 "
+    verbose "Adding trap \"$1\": $2"
+    trap_cmd="$2"; shift 2
+    for trap_signal in "$@"; do
+        trap -- "$(
+            extract_trap_cmd() { printf '%s\n' "$3"; }
+            eval extract_trap_cmd $( trap | sed -n "H;/^trap --/h;/${trap_signal}$/{x;p;q}" )
+            printf '%s\n' "${trap_cmd}"
+        );" "${trap_signal}" || return
+    done
+    # debug
+    # trap | while read line; do echo debug $line ; done
+}
+
+# reusable lock procedure
+# 1 -- readable lock name to report in message
+# 2 -- actual lock location
+# 3 -- number of 0.2s intervals to check if lock was abandoned
+check_lock() {
+    i=0
+    while ! mkdir "$2" 2>/dev/null ; do
+        [ $i -ne 0 ] ||
+            warning "Waiting for other $1 operation to finish..."
+        sleep 0.2;
+        i=$(( i + 1 ));
+        if [ $i -gt $3 ]; then
+            warning "Looks like lock file was abandoned. Ignoring lock file."
+            break
+        fi
+    done
+    trap_add "$1" "rmdir $2 2>/dev/null" INT TERM EXIT
+}
+
+set_fetch_lock() {
+    check_lock "fetch" "${TMWW_LOCK}/tmww-fetch-$servername" 50
+}
+
+unset_fetch_lock() {
+    rmdir "${TMWW_LOCK}/tmww-fetch-$servername" 2>/dev/null
+}
+
+error_section() {
+    error "Error in config \"$section_name\" section. Aborting."
+    exit 1
+}
+
+# comm files should be sorted
+comm_23 () {
+    comm --nocheck-order -23 $1 $2 2>/dev/null
+}
+
+comm_12 () {
+    comm --nocheck-order -12 $1 $2 2>/dev/null
+}
+
+backifs="${IFS}"
+uniqifs=$(printf "\034")
+tabchar=$(printf "\011")
+nl=$(printf "\n "); nl="${nl% }"
+
+# extended regexp tab and csv fields
+field="[^${tabchar}]+${tabchar}"
+csv="[^,]+, *"
+
+# WARNING:  all splitting functions with IFS evaluate strings
+#           which mean your string with $(rm -rf /) will be evaluated
+#           don't use it with any potentially insecure input
+
+# safe for simple cases like splitting dates and csv numbers
+split_dash() { local IFS; IFS='-'; echo $*; }
+split_comma() { local IFS; IFS=','; echo $*; }
+
+# get_element N "a b c"
+get_element() { eval printf \"\%s\" \$$(( $1 + 1 )) ; }
+get_dash() { get_element $1 $( shift; split_dash "$@" ) ; }
+get_comma() { get_element $1 $( shift; split_comma "$@" ) ; }
+get_tab() { local id IFS; id="$1"; shift; IFS="${tabchar}"; get_element ${id} $* ; }
+
+# no alert if list is missing!
+sort_list () {
+    [ ! -f "$TMWW_LISTPATH/$servername/$1" ] && return
+    sort -u "$TMWW_LISTPATH/$servername/$1"
+}
+
+make_csv() { ${AWK} -- '{if (FNR != 1) printf ", "; printf "%s",$0}' ; }
+
+make_qcsv() { ${AWK} -- '{if (FNR != 1) printf ", "; printf "\"%s\"",$0}' ; }
+
+awk_sum() { ${AWK} -- 'BEGIN{s=0}{s+=$1}END{print s}' ; }
+
+check_dir () {
+    mkdir -p "$1" || {
+        error "Cannot create directory $1 . Aborting."
+        exit 1
+    }
+    chmod +w "$1" || {
+        error "Directory $1 is not writable. Aborting."
+        exit 1
+    }
+}
+
+# usual usage:
+# requireplugin "pluginname.plugin" || return 1
+# requireplugin "libname.lib.sh" || return 1
+requireplugin(){
+    local TMWW_PLUGINEXPORT="yes"
+    [ -f "$TMWW_PLUGINPATH/$1" ] || {
+        error "Missing $1 plugin. Aborting."
+        return 1
+    }
+    if ! printf "%s" "${plugin_array}" | grep -q " $1 " 2>/dev/null; then
+        verbose "Exporting: $1"
+        plugin_array="${plugin_array} $1 "
+        . "$TMWW_PLUGINPATH/$1"
+        return 0
+    fi
+}
+
+# this route is intended for use in internal scripts
+# where plugin is written in way not allowing function calls
+# runaction "pluginname.plugin" || return 1
+runaction(){
+    TMWW_CMDACTION="$1"
+    shift
+    action_plugin "$@"
+}
+
+#
+# actions
+#
+#
+
+# require TMWW_CMDACTION set to plugin name
+# and plugin options inside plugin_options
+action_plugin() {
+    # reset errors flag
+    err_flag=0
+    if [ -f "${TMWW_PLUGINPATH}/$TMWW_CMDACTION.plugin" ]; then
+        verbose "Running plugin: ${TMWW_CMDACTION}"
+        . "$TMWW_PLUGINPATH/$TMWW_CMDACTION.plugin"
+        errcode=$?
+        if [ "${TMWW_VERBOSE}" = "yes" -a $errcode -ne 0 ]; then
+            verbose "Execution failed with error code: $errcode"
+        else
+            verbose "Finished successfully."
+        fi
+    else
+        error "Invalid action \"$TMWW_CMDACTION\". Aborting."
+        exit 1
+    fi
+}
+
+action_event () {
+    [ -s "$list_logon" -o -s "$list_logoff" ] &&
+        action_external "$@"
+}
+
+# it's stricty internal procedure, full expression should be in $line variable
+action_external () {
+    if type "$2" >/dev/null 2>&-; then
+        line=${line#*\ }
+        externalcmd=$(echo "$2 ${line#*\ }" | \
+            sed "s/%servertime/${servertime}/; \
+                s|%logon|\"${list_logon}\"|; \
+                s|%logoff|\"${list_logoff}\"|")
+        verbose "Executing: ${line}"
+        # run external command with error output
+        eval "${externalcmd}"
+        errcode=$?
+        if [ "$TMWW_VERBOSE" = "yes" -a $errcode -ne 0 ]; then
+            verbose "Execution failed with error code: $errcode"
+        else
+            verbose "Finished successfully."
+        fi
+    fi
+}
+
+action_ring () {
+    [ "${TMWW_RING}" = "yes" ] || return
+    process_section event
+    ring_backup=''; match_ring=''
+# FIXME printf "%s"
+    printf "$configdata\n" | tac | while read line; do
+        set -- $line
+        if [ -n $1 ]; then
+            case $1 in
+                all)
+                    case $2 in
+                        on) [ -s "$list_logon" ] && match_ring="$3" ;;
+                        off) [ -s "$list_logoff" ] && match_ring="$3" ;;
+                        *)  error_section event ;;
+                    esac
+                    ;;
+                pattern)
+                    case $3 in
+                        on) get_list=$( $NAMEGREP "$2" "$list_logon" )
+                            [ -n "$get_list" ] && match_ring="$4" ;;
+                        off) get_list=$( $NAMEGREP "$2" "$list_logoff" )
+                            [ -n "$get_list" ] && match_ring="$4" ;;
+                        *)  error_section event ;;
+                    esac
+                    ;;
+                gm)
+                    case $2 in
+                        on) get_list=$( comm_23 "$list_gm" \
+                                "$list_gm.$TMWW_ACTION" )
+                            ring_backup="yes"
+                            [ -n "$get_list" ] && match_ring="$3" ;;
+                        off) get_list=$( comm_23 "$list_gm.$TMWW_ACTION" \
+                                "$list_gm" )
+                            ring_backup="yes"
+                            [ -n "$get_list" ] && match_ring="$3" ;;
+                        *)  error_section event ;;
+                    esac
+                    ;;
+                *)
+                    case $2 in
+                        on)
+                            sorted_list=$( sort_list "$1" )
+                            get_list=$( printf "$sorted_list" | \
+                                comm_12 - "$list_logon" )
+                            [ -n "$get_list" ] &&
+                                match_ring="$3"
+                            ;;
+                        off)
+                            sorted_list=$( sort_list "$1" )
+                            get_list=$( printf "$sorted_list" | \
+                                comm_12 - "$list_logoff" )
+                            [ -n "$get_list" ] &&
+                                match_ring="$3"
+                            ;;
+                        *)  error_section event
+                            ;;
+                    esac
+                    ;;
+            esac
+            [ -n "$match_ring" ] && {
+                eval "$TMWW_PLAY" "$TMWW_PLAYPATH/$match_ring" \
+                   >/dev/null 2>&1
+                break
+            }
+        fi
+    done
+    [ "$TMWW_DRYRUN" != "yes" ] && [ "$ring_backup" = "yes" ] &&
+        cp -u "$list_gm" "$list_old_gm"
+}
+
+#
+# action handler
+#
+#
+
+TMWW_PLUGINS="yes"
+
+# it's to prefix cmdline params passed to plugin with CMDPREFIX
+prefix_params() {
+    local IFS=${uniqifs}
+    prefix_result="${TMWW_CMDPREFIX}"
+    for i in "$@"; do
+        # save quotes
+        i="'"$( printf "%s" "$i" | sed "
+            s/'/'\"'\"'/g
+            s/\\\\/\\\\\\\\/g
+        ")"'"
+        prefix_result="${prefix_result} $i"
+    done
+    echo ${prefix_result}
+}
+
+#
+# overload plugins
+#
+#
+
+# can't process configdata with section overrides because of nesting limit
+# (can't export variables/define visible functions); this hack works
+include_overrides() {
+    requireplugin "$1"
+    [ -z "$2" ] && return
+    shift
+    include_overrides "$@"
+}
+
+process_section overload
+plugin_array=$( printf "%s\n" "${configdata}" | awk -v ORS=' ' -- '{$1=""; print}' )" "
+[ -z "${configdata}" ] || 
+    include_overrides $( printf "%s\n" "${configdata}" | awk -v ORS=' ' -- '{print $1}' )
+
+# cli overridden action
+[ -z "${override_action}" ] || {
+    TMWW_CMDACTION=${override_action}
+    TMWW_CMDPREFIX=""
+}
+
+# action overriden
+[ ! -z "${TMWW_CMDACTION}" ] && {
+    # add prefix and protective quotation
+    prefixed_params=$( prefix_params "$@" )
+    IFS=${uniqifs}
+    # stay silent on unpaired quotes
+    # debug
+    # printf "params: %s\n" "$@"
+    # printf "prefixed params: %s\n" "${prefixed_params}"
+    eval set -- ${prefixed_params} 2>/dev/null
+    # printf "arg: %s\n" "$@"
+    # exit 0
+    IFS="${backifs}"
+    # check if help was requested using config with CMDACTION/CMDPREFIX
+    if [ -n "${TMWW_CMDPREFIX}" ]; then clihelp="$2"
+    else clihelp="$1"; fi
+    case "${clihelp}" in
+        -h*) TMWW_PLUGINHELP="yes" ;;
+    esac
+    # plugin should check TMWW_PLUGINHELP
+    action_plugin "$@"
+    exit ${errcode}
+}
+
+# if no overriden action still preserve options ignoring TMWW_CMDPREFIX
+TMWW_CMDPREFIX=''
+prefixed_params=$( prefix_params "$@" )
+
+#[ ! -z "$plugin_options" ] && {
+#    help
+#    exit 1
+#}
+
+process_section actions
+
+printf "%s\n" "$configdata" | while read line; do
+    eval set -- ${line} 2>/dev/null
+    case "$1" in
+        servertime)
+            [ -z "$2" ] || error_section
+            echo "${hlon}Server time:${hloff} ${servertime}"
+            ;;
+        summary)
+            [ -z "$2" ] || error_section
+            echo "${playersnum} ${hlon}players online${hloff}"
+            ;;
+        logon)
+            [ -z "$2" ] || error_section
+            get_list=$( make_csv < $list_logon )
+            [ -n "$get_list" ] &&
+                echo "${hlon}Logged on:${hloff} ${get_list}"
+            ;;
+        logoff)
+            [ -z "$2" ] || error_section
+            get_list=$( make_csv < $list_logoff )
+            [ -n "$get_list" ] &&
+                echo "${hlon}Logged off:${hloff} ${get_list}"
+            ;;
+        newline)
+            [ -z "$2" ] || error_section
+            echo ;;
+        ring)
+            [ -z "$2" ] || error_section
+            action_ring
+            ;;
+        external)
+            action_external "$@"
+            ;;
+        event)
+            action_external "$@"
+            ;;
+        fetch)
+            [ -z "$2" ] || error_section
+            check_dir "$TMWW_TMP"
+            check_dir "$TMWW_PRIVTMP"
+            set_fetch_lock
+            check_delta
+            unset_fetch_lock
+            ;;
+        localfetch)
+            [ -z "$2" ] || error_section
+            check_dir "$TMWW_TMP"
+            check_dir "$TMWW_PRIVTMP"
+            set_fetch_lock
+            # ensure priority for local link
+            TMWW_LINK=''
+            check_delta
+            unset_fetch_lock
+            ;;
+        script)
+            [ -z "$2" ] && error_section
+            process_section "$2"
+            shift 2
+            eval "$configdata"
+            ;;
+        '')
+            continue
+            ;;
+        *)  case "$1" in
+            [#]*) continue
+                ;;
+            esac
+            # IMPORTANT: make sure your action expression is safe for shell
+            #            e.g. doesn't run few commands separated with ";"
+            # you can use pipes and shell variables like $USER
+            # e.g. to reuse result from external command
+            backifs="$IFS"; IFS=${uniqifs}
+            # stay silent on unpaired quotes
+            eval set -- ${line} 2>/dev/null
+            IFS="${backifs}"
+            TMWW_CMDACTION="$1"
+            shift 
+            plugin_options="$@"
+            action_plugin "$@"
+            ;;
+    esac
+done
+
+exit 0
+

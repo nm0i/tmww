@@ -1,0 +1,2 @@
+101	party2	0,0	2000000,1	farmer	
+103	mageparty	0,0	2000000,1	mage	2000003,0	user3c2	2000003,0	user3c2	

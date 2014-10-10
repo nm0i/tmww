@@ -1,0 +1,54 @@
+#!/bin/sh
+# intended for daily cronjob
+: ${1?Usage: rsync-altsdb <user@host>}
+target="$1"
+
+# WARNING:  ensure delay between db users
+
+# server paths
+altspath='~/shared/share/alts/server.themanaworld.org'
+logpath='~/log/tmww/server.themanaworld.org'
+
+# local paths
+localaltspath=~/.config/tmww/alts/server.themanaworld.org
+locallogpath=~/log/tmww/server.themanaworld.org
+# uncomment for fixed tmp dir
+# localtmpdir=~/.tmp/dbupdate
+
+# uncomment to fetch logs
+# fetching logs
+# rsync -rtz -e "/usr/bin/ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" \
+#     "${target}:${logpath}" ${locallogpath} >/dev/null 2>&1
+
+[ -z "${localtmpdir}" ] && {
+    localtmpdir=$( mktemp --tmpdir -d tmww-dbupdate-XXXXXX )
+    trap "rm -rf '${localtmpdir}' >/dev/null 2>&1" INT TERM EXIT
+}
+
+# backup local altsdb
+ci -u -m -q "${localaltspath}"/dbchars.txt "${localaltspath}"/dbparty.txt "${localaltspath}"/dbplayers.jsonl
+
+# fetch chars and party files
+rsync -rtz -e "/usr/bin/ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" \
+    "${target}:${altspath}/dbchars.txt" ":${altspath}/dbparty.txt" "${localtmpdir}" >/dev/null 2>&1
+
+# merge altsdb
+cd "${localtmpdir}"
+tmww char merge "${localtmpdir}"/dbchars.txt
+tmww party merge "${localtmpdir}"/dbparty.txt
+
+# upload char and party db
+rsync -rtz --perms --chmod=ug+rw,o-rw \
+    -e "/usr/bin/ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" \
+    "${localaltspath}"/dbchars.txt "${localaltspath}"/dbparty.txt \
+    "${target}:${altspath}" \
+    >/dev/null 2>&1
+
+# uncomment if your playerdb copy is central
+# upload player db
+# rsync -rtz --perms --chmod=ug+rw,o-rw \
+#    -e "/usr/bin/ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" \
+#    "${localaltspath}"/dbplayers.jsonl \
+#    "${target}:${altspath}" \
+#    >/dev/null 2>&1
+

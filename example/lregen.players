@@ -1,0 +1,15 @@
+# this players list is used to filter records for players
+# accessing altsdb with "limited" policy
+
+# reason to remove aliases - throw away game masters and conflicting players
+# plus some information noise so players can't freely guess on chars
+# excluded from acces to be desired suspected alts
+
+# limited policy users can't access full db, can't write into it
+# and can't see own records for obvious reasons :)
+
+localgm
+player3
+
+noizechars
+

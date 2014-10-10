@@ -1,0 +1,14 @@
+  ________  ____      ___      __
+ /_  __/  |/  / | /| / / | /| / /
+  / / / /|_/ /| |/ |/ /| |/ |/ / 
+ /_/ /_/  /_/ |__/|__/ |__/|__/  
+
+tmww (The Mana World Watcher) is POSIX compliant shell script performing
+miscellaneous subsidiary tasks on tmwa online player list and other game data.
+Typical usage includes online list pretty print, notifications if friends are
+online and logging of players online presence.
+
+Links:
+http://themanaworld.org/
+https://github.com/willee/tmww/
+

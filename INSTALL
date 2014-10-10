@@ -1,0 +1,40 @@
+Install
+-------
+
+install:
+    cd tmww_distr
+    # make tmww visible from PATH
+    PATH="$PATH:~/bin"
+    cp ./bin/tmww ~/bin
+    mkdir -p ~/.oh-my-zsh/custom/plugins/tmww
+    cp ./zsh/tmww.plugin.zsh ~/.oh-my-zsh/custom/plugins/tmww
+    man 7 tmww-zsh
+    ed ~/.zshrc
+    mkdir -p ~/.config/tmww
+    cp -RP ./conf/* ~/.config/tmww
+    cp -R ./plugins ~/.config/tmww
+    man 5 tmww-conf
+    ed ~/.config/tmww/default.conf
+    
+build manuals:
+    make man
+
+Test
+----
+
+tmww may be tested running "make tests" from distribution root path. Shells are
+tested changing -s argument to shtest; awk/awk params are hardcoded to tmww and
+in order to test should be fixed in bin/tmww.
+
+tested systems:
+    debian 7
+
+tested shells:
+    dash 0.5.7
+    zsh 4.3.xx (zsh -c 'emulate -R sh')
+    bash 4.2.xx (bash --posix)
+
+tested awks:
+    gawk 4.0.1 (AWK="/usr/bin/gawk"; AWKPARAMS="--posix")
+    mawk 1.3.3 (AWK="/usr/bin/mawk"; AWKPARAMS="-W interactive")
+

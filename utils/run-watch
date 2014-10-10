@@ -1,0 +1,3 @@
+#!/bin/bash
+watch -cpn 240 "tmww -ra watch -d 230 tmw-common.conf"
+

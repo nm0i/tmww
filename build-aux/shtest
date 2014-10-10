@@ -1,0 +1,298 @@
+#!/bin/sh
+
+AWK="mawk"
+colordiff=$(which colordiff)
+
+help_shtest() {
+    cat <<EOF
+shtest -- run command line tests
+Usage: shtest [ OPTS ] TEST+
+Options:
+    -s EXPR -- shell expression which will get test command piped to
+        e.g. 'zsh -c "emulate sh;sh"' or 'bash --posix'; default is "/bin/sh"
+    -q -- quite test; exit code set to number of failed tests
+        default is verbose output
+    -r -- refill all tests output (like cram -iy)
+    -i NUM -- indent (default is 4)
+    -b -- fail test on unhandled error code
+    -e -- keep default environment (don't inherit LC_ALL and PATH from shell)
+    -E ENV -- set custom environment prefix for each call
+    -f -- force tests ignoring faults
+    -C -- do not colorize diff
+    -d -- discard commands stderr
+    -x -- show which commands are executed
+    -h -- this help
+EOF
+}
+
+check_string_chars() {
+    case "$1" in
+        $2) printf "%s\n" "$3"; return 1; ;;
+    esac
+}
+
+# defaults
+shtest_shell='/bin/sh'
+shtest_quite=''
+shtest_refill=''
+shtest_indent="    "
+shtest_brick=''
+shtest_keepenv=''
+shtest_setenv=''
+shtest_force=''
+shtest_colordiff=1
+shtest_discard=''
+shtest_showexec=''
+
+: ${1?$(help_shtest)}
+
+OPTIND=1
+while getopts s:qri:bfeE:Cdxh opt; do
+    case "${opt}" in
+        s)  shtest_shell="${OPTARG}" ;;
+        q)  shtest_quite=1 ;;
+        r)  shtest_refill=1 ;;
+        i)  check_string_chars "${OPTARG}" "*[!0-9]*" "Incorrect indent (must be number)" || return 1
+            shtest_indent=''
+            while [ "${OPTARG}" -ne 0 ]; do
+                shtest_indent="${shtest_indent} "; OPTARG=$(expr $OPTARG - 1); done
+            ;;
+        b)  shtest_brick=1 ;;
+        f)  shtest_force=1 ;;
+        e)  shtest_keepenv=1 ;;
+        E)  shtest_setenv="${OPTARG}" ;;
+        C)  shtest_colordiff='' ;;
+        d)  shtest_discard=1 ;;
+        x)  shtest_showexec=1 ;;
+        h)  help_shtest; exit 0 ;;
+    esac
+done
+
+shift $(expr $OPTIND - 1)
+
+custom_env=''
+if [ -z "${shtest_keepenv}" ]; then
+    custom_env=$(printf 'LC_ALL="%s" PATH="%s" %s' "${LC_ALL}" "${PATH}" "${shtest_setenv}" )
+else
+    custom_env=$(printf 'LC_ALL="%s"' "C")
+fi
+
+#
+# functions
+#
+#
+
+command_prefix="${shtest_indent}$ "
+auxcommand_prefix="${shtest_indent}% "
+multiline_prefix="${shtest_indent}> "
+exitcode_prefix="${shtest_indent}? "
+
+dump_line() {
+    printf "%s\n" "${line}" >> "${errfile}"
+}
+
+nl="$(printf '\n ')"; nl="${nl% }"
+
+test_parser() {
+    # parse_state:
+    # empty - not in any state
+    #   command/auxcommand
+    # 1 multiline
+    state_multiline=1
+    #   exitcode
+    # 2 output
+    state_output=2
+    # 3 ready to execute
+    state_ready=3
+    case "${line}" in
+        "${auxcommand_prefix}"*)
+            command="${line#${auxcommand_prefix}}"
+            cmdlineno="${lineno}"
+            parse_state="${state_ready}"
+            auxcommand=1
+            dump_line
+            ;;
+        "${command_prefix}"*)
+            if [ -z "${parse_state}" ]; then
+                command="${line#${command_prefix}}"
+                cmdlineno="${lineno}"
+                parse_state="${state_multiline}"
+                test_count=$(expr ${test_count} + 1)
+                dump_line
+            else
+                buffer="${line}"
+                parse_state="${state_ready}"
+            fi
+            ;;
+        "${multiline_prefix}"*)
+            case "${parse_state}" in
+                "${state_multiline}") command="${command:+${command}${nl}}${line#${multiline_prefix}}" ;;
+                '') next ;;
+                "${state_output}") output="${output:+${output}${nl}}${line#${shtest_indent}}" ;;
+            esac
+            dump_line
+            ;;
+        "${exitcode_prefix}"*)
+            case "${parse_state}" in
+                "${state_multiline}")
+                    exitcode="${line#${exitcode_prefix}}"
+                    parse_state="${state_output}"
+                    ;;
+                '') next ;;
+                *)
+                    parse_state="${state_output}"
+                    output="${output:+${output}${nl}}${line#${shtest_indent}}"
+                    ;;
+            esac
+            dump_line
+            ;;
+        "${shtest_indent}"*)
+            case "${parse_state}" in
+                "${state_output}")
+                    output="${output:+${output}${nl}}${line#${shtest_indent}}"
+                    parse_state="${state_output}"
+                    ;;
+                '') dump_line; return ;;
+                *)
+                    parse_state="${state_output}"
+                    output="${output:+${output}${nl}}${line#${shtest_indent}}"
+                    ;;
+            esac
+            # this isn't dumped by default
+            ;;
+        '')
+            if [ -n "${parse_state}" ]; then
+                parse_state="${state_ready}"
+                buffer=''; fullbuffer=1
+            else
+                dump_line
+            fi
+            ;;
+        *)
+            if [ -n "${parse_state}" ]; then
+                parse_state="${state_ready}"
+                buffer="${line}"
+            else
+                dump_line
+            fi
+            ;;
+    esac
+}
+
+report() {
+    [ -n "${shtest_quite}" ] || printf >&2 "%s\n" "$*"
+}
+
+process_result() {
+    local e
+    if [ -n "${shtest_refill}" ]; then
+        sed "s/^/${shtest_indent}/" "${result}" >> "${errfile}"
+        return
+    fi
+    ${AWK} -v output="${output}" -- '
+        BEGIN { split(output,o,"\n")}
+        {
+            if (o[NR] ~ / \(re\)$/) {
+                sub(" \(re\)$","",o[NR]);
+                if ($0 !~ "^" o[NR] "$" ) exit NR
+                next
+            } else if ($0 != o[NR]) exit NR
+        }
+        END { t=NR+1; if (o[t]!="") exit t}
+        ' "${result}" 2>/dev/null
+    e=$?
+    if [ "$e" -ne 0 ]; then
+        diff_result=$( printf "%s\n" "${output}" | diff -u "${result}" - )
+        printf "%s\n" "${diff_result}" >> "${errfile}"
+        [ -n "${shtest_quite}" ] && return 1
+        printf "Test failed: %s\n" "${command}"
+        printf "Test failed at %s line:\n" "${cmdlineno}"
+        printf "%s\n" "${diff_result}" | \
+            if [ -n "${shtest_colordiff}" -a -n "${colordiff}" ]; then colordiff; else cat; fi
+        return 1
+    else
+        sed "s/^/${shtest_indent}/" "${result}" >> "${errfile}"
+    fi
+}
+
+runcommand() {
+    if [ -n "${shtest_discard}" ]; then
+        printf '%s %s' "${custom_env}" "${command}" | eval "${shtest_shell}" 2>/dev/null
+        cmdexitcode="$?"
+    else
+        printf '%s %s' "${custom_env}" "${command}" | eval "${shtest_shell}" 2>&1
+        cmdexitcode="$?"
+    fi
+}
+
+test_result() {
+    local r
+    if [ "${parse_state}" = "${state_ready}" -a -n "${command}" ]; then
+        [ -z "${auxcommand}" -a -n "${shtest_showexec}" ] && report "Executing ${command}"
+        runcommand > "${result}"
+        if [ -z "${auxcommand}" ]; then
+            process_result || {
+                test_failed=$(expr ${test_failed} + 1 )
+                [ -z "${shtest_force}" -a -z "${shtest_refill}" ] && exit ${test_count}
+            }
+            if [ -z "${shtest_refill}" ]; then
+                case "${cmdexitcode}" in
+                    80)             exit 80 ;;
+                    "${exitcode}")  : ;;
+                    *)
+                        test_unhandledexit=$( expr ${test_unhandledexit} + 1)
+                        report "Unhandled exit code ${cmdexitcode} (expected ${exitcode}) at line ${cmdlineno}"
+                        [ -z "${shtest_force}" -a -n "${shtest_brick}" ] && exit 81
+                        ;;
+                esac
+            fi
+        fi
+        command=''; output=''; exitcode='0'; auxcommand=''; parse_state=''
+    fi
+}
+
+# args:
+# 1 -- file with tests
+run_test() {
+    local IFS command buffer fullbuffer output exitcode auxcommand line errfile lineno cmdlineno test_count test_failed parse_state
+    lineno=0; cmdlineno=0; test_count=0; test_failed=0; test_unhandledexit=0
+    errfile="${1%.t}.err"; : > "${errfile}"
+    command=''; buffer=''; fullbuffer=''; output=''; exitcode='0'; auxcommand=''; parse_state=''
+    report "Starting tests from $1"
+    result=$(mktemp || { report "Can't create temp file!"; exit 82 ; } )
+    trap "rm ${result} 2>/dev/null" INT TERM EXIT
+    backifs="${IFS}"
+    IFS=""
+    while :; do
+        if [ -n "${buffer}" -o -n "${fullbuffer}" ]; then
+            line="${buffer}"; buffer=''; fullbuffer=''
+        else
+            lineno=$(expr ${lineno} + 1)
+            read -r line || break
+        fi
+        test_parser
+        test_result
+    done < "$1"
+    parse_state="${state_ready}"
+    test_result
+    rm "${result}" 2>/dev/null
+    report "Finished ${test_count} test from $1, ${test_failed} failed, ${test_unhandledexit} unhandled exit codes"
+    if [ -n "${shtest_refill}" ]; then
+        mv "${errfile}" "$1"
+        [ "$?" -ne 0 ] && report "Can't move refilled tests file back!"
+    elif [ "${test_failed}" = "0" ]; then
+        rm "${errfile}" 2>/dev/null
+    fi
+}
+
+#
+# main
+#
+#
+
+for test_suite in "$@"; do
+    run_test "${test_suite}"
+done
+
+exit 0
+

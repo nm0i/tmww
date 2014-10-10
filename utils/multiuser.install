@@ -1,0 +1,21 @@
+#!/bin/sh
+
+# update user-specific files from distribution
+# this file is part of tmww
+
+dist="/usr/local/share/tmww"
+zsh_plugin_path="${ZSH}/custom/plugins/tmww"
+
+# local copy of configs
+rm -rf ~/.config/tmww
+mkdir -p ~/.config/tmww
+cp ${dist}/conf/* ~/.config
+
+# lock files for instances
+mkdir -p ~/.tmp/lock
+
+# oh-my-zsh completion plugin
+rm -rf ${zsh_plugin_path}
+mkdir -p ${zsh_plugin_path}
+cp ${dist}/zsh/tmww.plugin.zsh ${zsh_plugin_path}
+

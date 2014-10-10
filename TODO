@@ -1,0 +1,168 @@
+# vim: set ts=8 sw=4 tw=0 fdm=marker
+# legend: "-" task, "c" critical, "v" finished, "." pending, "n" cancelled, "--" finished notes
+# vimfolding quickstart: zc - close fold, zo - open; use zMzr on this doc
+# highlight critical tasks: /^c.*
+
+---- minimal release ---------------------------------------------------- {{{
+v accsniffer
+v alt
+v versiontable
+v versionlog
+v client
+v log
+v activity
+v server
+v db
+. maplog
+. watch
+- notify
+- suspect
+                                                                          }}}
+---- tmww: bugs --------------------------------------------------------- {{{
+- fix accsniffer empty party bug
+- review limited access policy since now it's possible to execute arbitrary code from config
+finished .............................. {{{
+v bash/zsh compatibility rewrite (some constructions from dash don't work in them)
+v escape quotes in client versions for valid yaml in versionlog/versiontable
+v strict field matching with jq
+v check all shell test numerical comparisons to include 2>&- or rewrite with number check -- probably done
+v fix cmdline escaping last backslash issue -- fixed cmdline_prefix part to single quotes
+v fix accsniffer quotes to single quote
+n "detected czemu ... tt" - fix questions in names >> cannot reproduce
+                                        }}}
+                                                                          }}}
+---- tmww: maintain ----------------------------------------------------- {{{
+- debian packaging
+- attach gnulib build-aux/gitlog-to-changelog as ChangeLog generator
+- split shtest
+- split md2man
+finished .............................. {{{
+n separate public repo and private - restricted plugins; separated packaging too -- cancelled
+                                        }}}
+                                                                          }}}
+---- tmww: features ----------------------------------------------------- {{{
+v add "preload" section to override some plugins and libraries (e.g. altsdb for server version)
+- add main option to disable "external", "script" and any other external executable action
+- check if possible to get rid of "cat" solution vs rsync/cp with ACL on or somehow else -- suid not suitable
+- add action to export online list snapshots to log format
+finished .............................. {{{
+v add "-h" option for plugins called using command line with config CMDPREFIX
+v add main option to prevent exporting shell variables
+v fix config parser to reuse predefined on cmdline TMWW_ variables
+v rethink parser - check if some backquote escaping may be dropped
+v fix < and > signs in html parser
+v rewrite awk config parser. look at allowed characters
+v move ring to end, add flag variable to check if ring required at the end
+v option to turn off color
+v plugin to work with alts db
+v ensure all plugins are working with lists
+v portable bugtracker for bug/feature/todolist >> just pretty vimfolding
+v choose database >> plaintext/jsonlines
+v working lists compilation from databases
+v rename plugins for .plugin suffix, fix tmww code
+v check shared tmp and private tmp folders concept
+v add trap in each local lock handler for all plugins
+v add handler to check included plugins are not included multiple times
+v check printf in all plugins
+v change fetch, altsdb, lists paths for common/priv tmp
+v replace awk with printf $n when needed - less external calls
+v make temporary wrapper for singleuser mv and multiuser workaround with cat
+v bash/zsh completion -- zsh only
+v add tmw config modline to lessen errors with config name collision with workdir -- just added ".conf" extension
+v replace sed for extended regexp option flag compatibility (-r/-E)
+v refactor plugins into plugins+libs (not sure) -- refactored
+v uberqool feature to read variables from cmdline and pass to commands in actions -- possible now within "execute script"
+v add "execute section" action to add arbitrary code within config
+n translate chars.txt database into jsonl >> canceled, no much need for timestamps
+                                        }}}
+                                                                          }}}
+---- tmww: plugin: activity --------------------------------------------- {{{
+- fix daily/monthly subcommand - accept multiple targets for daily output
+- add raw output - lines of numbers; suitable for postprocessing
+- add firstseen
+- fix some subcommands - add avg playing time per day (not sure needed) with some indication of deviation
+- fix daily and monthly for inexistent dates
+finished .............................. {{{
+v add "exclude char" command to activity printer (daily/monthly/average)
+v remove -n option where -d/-m available
+                                        }}}
+                                                                          }}}
+---- tmww: plugin: client ----------------------------------------------- {{{
+- possible automatic analyser for full month to check inconsistent client stats
+- possible automatic analyser for moment of client version change reporting matched chars not on same account and not already in db
+finished .............................. {{{
+                                        }}}
+                                                                          }}}
+---- tmww: plugin: alts ------------------------------------------------- {{{
+c crash tests
+- add "player" special word to lists to use player alts db
+- make minimal testing script (e.g. to ensure escaping done well on most common tasks)
+- add "player list custom" for custom jq
+- add "player list with NULL as FIELD" with NULL as special word to determine empty fields
+finished .............................. {{{
+v sort dbplayer entries with jq for easier rcsdiff -- require jq 1.4 or some ugly hack (skipped by default)
+v add "player show parties by char/id/player"
+v fix internal aux_ procedures to reduce dummy arguments (inherited without proper shift)
+v finish automatic char/account resolve
+v set up alts db
+v fix add char collision
+v some output to access every records (maybe with order number)
+v add NOT to query "player list" command
+v fix 2>&- for all jq expressions
+v add fields types quick reference
+v add operation "append" to add to db dumped record -- not safe operation, added note to try sanitize when done
+v fix accsniffer pcap expression to sniff only particular server -- isn't it done?
+n some output to access arrays (meaningful only for bot to wrap manaplus urls) >> left for bot task
+                                        }}}
+                                                                          }}}
+---- tmww: plugin: server ----------------------------------------------- {{{
+c db/server completion
+c crash tests
+- add "char list with xx as yy", expr: [not] as|lt|gt|le|ge
+finished .............................. {{{
+v process config sections for fields/aliases
+v char get inventory/storage by item/itemid
+v fix - init fields_printer with empty lines
+v party
+v player
+v summary
+                                        }}}
+                                                                          }}}
+---- tmww: plugin: maplog ----------------------------------------------- {{{
+finished .............................. {{{
+                                        }}}
+                                                                          }}}
+---- tmww: plugin: watch ------------------------------------------------ {{{
+- function spot: see if player is under known alts online
+- list compilation
+- list updates
+- update file removal
+- colorize background - e.g. for lists. probably another section
+- fixed columns number
+- output every list to new column option
+finished .............................. {{{
+                                        }}}
+                                                                          }}}
+---- tmww: documentation ------------------------------------------------ {{{
+- single user deploy concerning distributed package/example files -- makefile
+- simple guide
+- md2man fix singleline paragraph/blankline issue
+finished .............................. {{{
+v add note to clean variables in script action after runaction
+v glossary section: alt, account, player, etc.
+v place author, year, license in sources
+v generate 1 manpage for tmww. plugins only in info manual
+v separated pages for plugins
+v generate single html from separated pages
+v alts howto for limited access
+v alts example configs
+v alts document playerdb fields
+v pretty print example
+v alts howto
+v alts faq section
+v fix alts local multiuser setup (full access) tmp folder
+n move to pandoc for fast doc regen and texinfo(?) without creepy toolchain
+n move to pandoc just for man/html, no texinfo
+n source documentation >> manual is already extensive
+                                        }}}
+                                                                          }}}

@@ -1,0 +1,115 @@
+#!/bin/sh
+# this script should not be run as run
+# and require user to be in same group as tcpick
+# with tcpick capabilities set to cap_net_admin,cap_net_raw+eip
+#
+# accsniffer -- capture account ids, add to char db
+# change result quoting when needed
+#
+# IMPORTANT: sniffer assumes mapserver is on same IP as login server
+#
+# despite accsniffer provides ghetto circular cache
+# better option would be obviously doubly linked list
+#
+# it's not recommended to set large cachelimit with current caching
+# default is 50
+#
+# options:
+# $1 -- server name; e.g. server.themanaworld.org
+# $2 -- tmww config with all required options
+
+: ${1?Usage: accsniffer servername config}
+
+# INTERFACE=eth0
+AWK="/usr/bin/mawk -Winteractive"
+cachelimit=50
+
+/usr/bin/stdbuf -oL /usr/sbin/tcpick ${INTERFACE:+ -i $INTERFACE} \
+    "src $1 && port 5122 && \
+    tcp[((tcp[12:1] & 0xf0) >> 2):2] = 0x9500" -yH \
+    | $AWK -F "" "
+        # nccache (char cache counter) and npcache (party cache counter) are
+        # char/party circular cache pointers;
+        # should be arrays to be globally available inside function
+        BEGIN { nccache[0] = 0; npcache[0] = 0 }
+
+        # push line to particular cache, applying stack limit
+        function push(line,counter,cache) {
+            for (i in cache) {
+                if ( cache[i] == line ) return 0
+            }
+            cache[ counter[0]++ ] = line
+            if ( counter[0] >= ${cachelimit} ) counter[0] = 0
+            return 1
+        }
+
+        # decode from something like 00 0a 23 cd into binary
+        function decode(nm,     char) {
+            if ( nm == \"\" ) return \"\"
+            char = \"\"
+            while ((a = substr(nm,1,2)) != \"00\" && a != \"\" ) {
+                char = char sprintf(\"%c\", int(\"0x\" a))
+                nm = substr(nm,4)
+            }
+            return char
+        }
+
+        {
+            # check could be moved to pcap expression but anyway tcpick spams intro/outro
+            if ( substr(\$0,16,2) == \"00\" ) {
+                # offset: n*3+1, length: n*2+n-1
+
+                id1 = substr(\$0,7,2)
+                id2 = substr(\$0,10,2)
+                id3 = substr(\$0,13,2)
+                id4 = substr(\$0,16,2)
+                accid = int(\"0x\" id4 id3 id2 id1)
+
+                # offset 6, length 24
+                name = substr(\$0,19,71)
+                decoded_name = decode(name)
+
+                # cache char
+                if ( push(accid decoded_name, nccache, ccache) ) {
+
+                    # action
+                    add_char = sprintf(\"id %i char \\\"%s\\\"\", accid, decoded_name)
+                    # print add_char
+                    # system(\"tmww -ya alts $2 char add \" add_char)
+                    system(\"tmww -ya alts $2 char resolve \" add_char)
+                }
+
+                check = substr(\$0,109,2)
+                if ( check != \"\" && check != \"00\" ) {
+                    # offset 32
+                    id1 = substr(\$0,97,2)
+                    id2 = substr(\$0,100,2)
+                    id3 = substr(\$0,103,2)
+                    id4 = substr(\$0,106,2)
+                    checkid = int(\"0x\" id4 id3 id2 id1)
+                    if ( checkid == accid ) {
+                        # offset 36, length 23
+                        party = substr(\$0,109,68)
+
+                        # awk is a mess for chr/ord single/multibyte
+                        # dirty fix (not sure if it's because character leaves party)
+                        # there are still lot of fails; FIXME check protocol to fix
+                        if ( substr(party,0,2) != \"96\" ) {
+                            decoded_party = decode(party)
+                        
+                            # cache party
+                            if ( push(decoded_party decoded_char, npcache, pcache) ) {
+                            
+                                # action
+                                gsub(\"\\\"\",\"\\\"'\\\"'\\\"\",decoded_party)
+                                add_party = sprintf (\"party \\\"%s\\\" char \\\"%s\\\"\", decoded_party, decoded_name)
+                                # print add_party
+                                system(\"tmww -ya alts $2 party add \" add_party)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    "
+
