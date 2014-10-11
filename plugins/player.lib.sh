@@ -657,7 +657,7 @@ func_arseoscope() {
     [ -z "$1" ] && { error_missing; return 1; }
     result=$( func_char_get "$1" )
     [ -z "${result}" ] || {
-        plresult=$( func_player_get_by_id "${result}" )
+        plresult=$( aux_player_get_by_id "${result}" )
         [ -z "${plresult}" ] || {
             accounts=$( aux_player_ids "${plresult}" | \
                 ${AWK} ${AWKPARAMS} 'BEGIN{s=0}{s+=1}END{print s}')

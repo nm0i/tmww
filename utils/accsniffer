@@ -74,7 +74,7 @@ cachelimit=50
 
                     # action
                     gsub("'\''","'\''\"'\''\"'\''",decoded_name)
-                    add_char = sprintf("id %i char \"%s\"", accid, decoded_name)
+                    add_char = sprintf("id %i char '\''%s'\''", accid, decoded_name)
                     # print add_char
                     # system("tmww -ya alts " config " char add " add_char)
                     system("tmww -ya alts " config " char resolve " add_char)
@@ -103,7 +103,7 @@ cachelimit=50
                             
                                 # action
                                 gsub("'\''","'\''\"'\''\"'\''",decoded_party)
-                                add_party = sprintf ("party \"%s\" char \"%s\"", decoded_party, decoded_name)
+                                add_party = sprintf ("party '\''%s'\'' char '\''%s'\''", decoded_party, decoded_name)
                                 # print add_party
                                 system("tmww -ya alts " config " party add " add_party)
                             }

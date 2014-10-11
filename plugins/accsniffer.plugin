@@ -77,7 +77,7 @@ case "$1" in
     status)
         if [ -f ${TMWW_LOCK}/sniffer.$servername ]; then
             read sniffer_pgid < ${TMWW_LOCK}/sniffer.$servername
-            result=$( ps -Ao 'pgid=' | grep ${sniffer_pgid} )
+            result=$( ps -Ao 'pgid=' | grep -- "${sniffer_pgid}" )
             if [ ! -z "${result}" ]; then
                 echo Sniffer listening on $servername
             else
