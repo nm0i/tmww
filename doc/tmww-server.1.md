@@ -10,15 +10,18 @@ subcommand: char -- character database handler
     grep [ chars | ids | pcids ] REGEXP -- search known names, output names/names with ids
     fuzzy [ chars | ids | pcids ] PATTERN -- case-insensitive levenshtein distance 1 search
     agrep [ -e ERRORS ] [ chars | ids | pcids ] PATTERN -- approximate grep with max ERRORS
-    get [ [ char | id | pcid ] by { char CHAR | pcid PCID } ] -- get CHAR accid or pcid
-    show [ chars | ids | pcids | parties ] by id ID -- get all known chars on acc_id
-    show [ chars | ids | pcids | parties ] by { char CHAR | pcid PCID } -- get chars on account
+    [-cnar] [-f EXPR] [-s NUM] get { CHAR | [ skills | inventory | vars | id | char | accs | db | FIELD+ ]
+        by { char CHAR | pcid PCID } }
+    [-cnar] [-f EXPR] [-s NUM] show { CHAR | [ parties | storage | vars | ids | chars | accs | db | FIELD+ ]
+        by { char CHAR | id ID | pcid PCID } }
     dig REGEXP -- grep + show pcids by ids from grep matches
+    summary [ SUMMARY ] by { char CHAR | id ID | pcid PCID }
 
 subcommand: party -- party database handler  
 
-    get [ by { char CHAR | pacid PCID | partyid PARTYID } ] -- get char's party name
-    show [ chars | ids | pcids | players ] by { party PARTY | char CHAR | pcid PCID | partyid PARTYID }
+    get { CHAR | by { char CHAR | pcid PCID } }
+    [-cnar] [-f EXPR] [-s NUM] show { CHAR | [ ids | chars | players | accs | db | FIELD+ ]
+        by { char CHAR | party PARTY | player PLAYER | pcid PCID } }
     { grep | fuzzy | agrep [ -e ERRORS ] } PATTERN -- grep/approximate grep party name
     dig PATTERN -- grep + show ids/charname of party members
 
@@ -33,8 +36,10 @@ subcommand: player -- players database handler
     resolve PLAYER -- resolve all player alts into accounts
     del PLAYER FIELD
     del PLAYER FIELD element VALUE
-    get { CHAR | by { char CHAR | id ACCID } } -- dereference player entry
-    show [ ids | chars | parties ] by { char CHAR | id CHAR | player PLAYER } -- lookup
+    [-cnar] [-f EXPR] [-s NUM] get { CHAR | by { char CHAR | id ACCID | pcid PCID } }
+    [-cnar] [-f EXPR] [-s NUM] show { PLAYER | [ ids | chars | parties | accs | db | FIELD+ ]
+        by { char CHAR | id ID | pcid PCID } }
+    summary [ SUMMARY ] by { char CHAR | id ID | player PLAYER | pcid PCID }
     list with FIELD
     list with { FIELD [ not ] as VALUE | VALUE [ not ] in FIELD }+
     dump PLAYER -- dump JSONline record of PLAYER; tmww player dump veryape
@@ -49,6 +54,10 @@ subcommand: player -- players database handler
     lregen -- regenerate shortened playerdb version if limiteddb is in use
     FIXME merge FILENAME -- simple merge player records + sanitize
     FIXME force-merge FILENAME -- replace duplicated records with new ones + sanitize
+
+subcommand: select -- search inventory/storage
+
+    select [-incs] by { ids ITEMID+ | names ITEMNAME+ | re REGEXP | itemsets GLOB+ }
 
 Glossary
 --------
@@ -90,10 +99,11 @@ terms
     accid, partyname, charname, playername
 
 operations  
+
     char { add | resolve | sanitize | merge | get | show | grep | agrep | fuzzy | dig }
     party { add | sanitize | merge | get | show | grep | agrep | fuzzy }
-    player { create | remove | rename | ref | add | resolve | del | \
-        get | show | list | dump | record | append | keys | field | search | \
+    player { create | remove | rename | ref | add | resolve | del |
+        get | show | list | dump | record | append | keys | field | search |
         sanitize | lregen | merge | forcemerge }
 
 .server.plugin
@@ -102,10 +112,11 @@ terms
     accid, pcid, partyname, partyid, charname, playername, db, accs, vars
 
 operations  
+
     char { get | show | grep | agrep | fuzzy | dig | summary }
     party { get | show | grep | agrep | fuzzy | summary }
-    player { create | remove | rename | ref | add | resolve | del | \
-        get | show | list | dump | record | append | keys | field | search | \
+    player { create | remove | rename | ref | add | resolve | del |
+        get | show | list | dump | record | append | keys | field | search |
         sanitize | lregen | merge | forcemerge | summary }
 
 Aside of "show { ids | parties | players }" there are new "pcids" which are
@@ -144,7 +155,6 @@ Output fields names for db/accs could be customized in config sections
 hardcoded field names:
 
 party       lookup of party name
-partylead   FIXME y/n/empty depending if char is in party and if party lead
 player      lookup player name
 
 "accs" fields output information per account (accid), "db" - per charname. "db"

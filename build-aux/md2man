@@ -154,7 +154,6 @@ section == "SYNOPSIS" && ! /^ *$/ {
     }
 }
 {
-    # FIXME
     # protect dots inside words
     while ($0  ~ word "\\." word )
         sub(/\./, "~dOt~")
@@ -165,7 +164,7 @@ section == "SYNOPSIS" && ! /^ *$/ {
         sub(/^\*/, "", b)
         if ((a = index(b, ")(")) > 3) {
             w = substr(b, 3, a - 3)
-            subwords["\\<" w "\\>"] = "\\fI" w "\\fP"
+            subwords[w] = "\\fI" w "\\fP"
         }
         if ((a = index(b, "(")) > 1) {
             w = substr(b, 1, a - 1)
@@ -227,12 +226,15 @@ section == "SYNOPSIS" && ! /^ *$/ {
         if (section != "SYNOPSIS" || $0 ~ /^  ? ? ?/) sub(/ */,"")
 
         text = (text ? text " " : "") $0
+        if (prevblankline == 1) {
+            print ".PP"
+            prevblankline = 0
+        }
         next
 
     # blank line
     } else if (NF == 0) {
         if (text) { print text; text = "" }
-        # flush vertical space
         if (prevblankline == 0) {
             print ".PP"
         }
@@ -250,6 +252,5 @@ section == "SYNOPSIS" && ! /^ *$/ {
     if (text) { print text; text = "" }
     if (section != "SYNOPSIS" || $0 ~ /^  ? ? ?/) sub(/ */,"")
     print
-    if ($0 ~ /  $/) print ".br"
 }
 

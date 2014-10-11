@@ -146,8 +146,8 @@ finished .............................. {{{
 ---- tmww: documentation ------------------------------------------------ {{{
 - single user deploy concerning distributed package/example files -- makefile
 - simple guide
-- md2man fix singleline paragraph/blankline issue
 finished .............................. {{{
+v md2man fix singleline paragraph/blankline issue
 v add note to clean variables in script action after runaction
 v glossary section: alt, account, player, etc.
 v place author, year, license in sources
