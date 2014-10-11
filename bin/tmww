@@ -17,11 +17,10 @@ FETCH="/usr/bin/curl --retry 0 -s -L -m 8 --retry-delay 1"
 # FETCH="/usr/bin/wget -O - -c -t 1 -q"
 # default to shell's getopts
 GETOPTS="getopts"
-AWK="/usr/bin/gawk"
+#AWK="/usr/bin/gawk"
 #AWKOPTS="--posix"
-#AWK="/usr/bin/mawk"
-#AWKPARAMS="-W interactive"
-# AWK="/usr/bin/mawk"
+AWK="/usr/bin/mawk"
+AWKPARAMS="-W interactive"
 # GNU sed flag for extended regexps
 ESED="-r"
 # BSD sed flag for extended regexps
