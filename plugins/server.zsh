@@ -172,6 +172,8 @@ _tmww_plugin_server_char_args() {
     else
         local cmd; cmd="server_char_${words[1]}"
         if (( $+functions[_tmww_plugin_${cmd}] )); then
+            words=("dummy" "${words[@]}")
+            CURRENT=$(expr $CURRENT + 1)
             _arguments "*:: :_tmww_plugin_${cmd}"
         else
             _message "no operation completion available"
@@ -472,6 +474,8 @@ _tmww_plugin_server_player_args() {
     else
         local cmd; cmd="server_player_${words[1]}"
         if (( $+functions[_tmww_plugin_${cmd}] )); then
+            words=("dummy" "${words[@]}")
+            CURRENT=$(expr $CURRENT + 1)
             _arguments "*:: :_tmww_plugin_${cmd}"
         else
             _message "no operation completion available"

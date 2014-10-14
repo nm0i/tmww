@@ -213,6 +213,8 @@ _tmww_plugin_db_item_args() {
         local cmd; cmd="db_item_${words[1]}"
         #_tmww_debug argscmd $cmd words $words current $CURRENT
         if (( $+functions[_tmww_plugin_${cmd}] )); then
+            words=("dummy" "${words[@]}")
+            CURRENT=$(expr $CURRENT + 1)
             _arguments "*:: :_tmww_plugin_${cmd}"
         else
             _message "no operation asd completion available"
@@ -330,6 +332,8 @@ _tmww_plugin_db_mob_args() {
         local cmd; cmd="db_mob_${words[1]}"
         #_tmww_debug cmd $cmd words $words current $CURRENT
         if (( $+functions[_tmww_plugin_${cmd}] )); then
+            words=("dummy" "${words[@]}")
+            CURRENT=$(expr $CURRENT + 1)
             _arguments "*:: :_tmww_plugin_${cmd}"
         else
             _message "no operation completion available"
