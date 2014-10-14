@@ -23,7 +23,7 @@ _tmww_debug() {
 }
 
 # grab default config path as _opt_tmww_DIRCONFIG from tmww itself
-eval _opt_tmww_$( sed -n '/DIRCONFIG=/{p;q};15q' `which tmww` )
+eval _opt_tmww_$( sed -n '/DIRCONFIG=/{p;q};15q' `command -v tmww 2>/dev/null` )
 
 # IMPORTANT: action override is completed before config but plugins path may be changed using config
 #            in any way using default.conf without parsing INCLUDE configs
