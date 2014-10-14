@@ -44,6 +44,10 @@ rsync -rtz --perms --chmod=ug+rw,o-rw \
     "${target}:${altspath}" \
     >/dev/null 2>&1
 
+# backup remote altsdb
+ssh "${target}" "cd ${altspath} && ci -u -m -q dbchars.txt dbparty.txt dbplayers.txt" \
+    >/dev/null 2>&1
+
 # uncomment if your playerdb copy is central
 # upload player db
 # rsync -rtz --perms --chmod=ug+rw,o-rw \

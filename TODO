@@ -33,19 +33,19 @@ n "detected czemu ... tt" - fix questions in names >> cannot reproduce
                                                                           }}}
 ---- tmww: maintain ----------------------------------------------------- {{{
 - debian packaging
-- attach gnulib build-aux/gitlog-to-changelog as ChangeLog generator
 - split shtest
 - split md2man
 finished .............................. {{{
+v attach gnulib build-aux/gitlog-to-changelog as ChangeLog generator
 n separate public repo and private - restricted plugins; separated packaging too -- cancelled
                                         }}}
                                                                           }}}
 ---- tmww: features ----------------------------------------------------- {{{
-v add "preload" section to override some plugins and libraries (e.g. altsdb for server version)
 - add main option to disable "external", "script" and any other external executable action
 - check if possible to get rid of "cat" solution vs rsync/cp with ACL on or somehow else -- suid not suitable
 - add action to export online list snapshots to log format
 finished .............................. {{{
+v add "preload" section to override some plugins and libraries (e.g. altsdb for server version)
 v add "-h" option for plugins called using command line with config CMDPREFIX
 v add main option to prevent exporting shell variables
 v fix config parser to reuse predefined on cmdline TMWW_ variables
@@ -116,10 +116,10 @@ n some output to access arrays (meaningful only for bot to wrap manaplus urls) >
                                         }}}
                                                                           }}}
 ---- tmww: plugin: server ----------------------------------------------- {{{
-c db/server completion
 c crash tests
 - add "char list with xx as yy", expr: [not] as|lt|gt|le|ge
 finished .............................. {{{
+v db/server completion
 v process config sections for fields/aliases
 v char get inventory/storage by item/itemid
 v fix - init fields_printer with empty lines
