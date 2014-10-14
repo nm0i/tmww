@@ -31,7 +31,7 @@ TMWW_SERVERSTORAGE="${TMWW_SERVERSTORAGE:-${TMWW_SERVERPATH}/world/save/storage.
 TMWW_SERVERSKILLDB="${TMWW_SERVERSKILLDB:-${TMWW_SERVERPATH}/world/map/db/skill_db.txt}"
 # TMWW_SERVER="${TMWW_SERVER:-${TMWW_SERVERPATH}/}"
 
-AGREP=$(command -v agrep >/dev/null 2>&1)
+AGREP=$(command -v agrep 2>&1)
 
 # chars allowed in query expression as field name
 fieldchars="-a-zA-Z0-9_\$\#"

@@ -100,7 +100,7 @@ custom fields
     ATK	DEF	
     0	0
     0	0
-    $ tmww item show fname by re terranite
+    $ tmww item -c show fname by re terranite
     chest_item_db.txt    767  TerraniteChestArmor
     generic_item_db.txt  763  TerraniteOre
     head_item_db.txt     766  TerraniteHelmet
@@ -172,7 +172,7 @@ mob get
     1034  GrassSnake
     1096  SoulSnake
     $ tmww mob show db by names Snake CaveSnake
-    ID    Name       Jname      LV   HP   SP  EXP  JEXP  Range1  ATK1  ATK2  DEF  MDEF  STR  AGI  VIT  INT  DEX  LUK  Range2  Range3  Scale  Race  Element  Mode  Speed  Adelay  Amotion  Dmotion  D1id  D1%   D2id  D2%  D3id  D3%  D4id  D4%  D5id  D5%  D6id  D6%  D7id  D7%  D8id  D8%  Item1  Item2  MEXP  ExpPer  MVP1id  MVP1per  MVP2id  MVP2per  MVP3id  MVP3per  mutationcount  mutationstrength
+    ID    Name       Jname      LV   HP   SP  EXP  JEXP  Range1  ATK1  ATK2  DEF  MDEF  STR  AGI  VIT  INT  DEX  LUK  Range2  Range3  Scale  Race  Element  Mode  Speed  Adelay  Amotion  Dmotion  D1id  D1p   D2id  D2p  D3id  D3p  D4id  D4p  D5id  D5p  D6id  D6p  D7id  D7p  D8id  D8p  Item1  Item2  MEXP  ExpPer  MVP1id  MVP1per  MVP2id  MVP2per  MVP3id  MVP3per  mutationcount  mutationstrength
     1021  CaveSnake  CaveSnake  30   800  0   0    13    1       20    15    1    5     10   1    1    0    5    20   1       1       1      3     20       129   800    1872    672      480      612   1000  610   40   713   500  717   400  717   400  641   20   0     0    0     0    0      0      0     0       0       0        0       0        0       0        3              50
     1010  Snake      Snake      115  850  0   0    56    1       75    90    4    6     20   11   10   10   35   10   1       1       1      0     20       133   900    1300    672      480      641   150   0     0    714   400  714   400  710   500  0     0    0     0    0     0    0      0      0     0       0       0        0       0        0       0        2              30
     $ tmww mob show m1 by names Snake CaveSnake

@@ -21,7 +21,7 @@ playerchars="a-zA-Z0-9_\-"
 
 [ "${TMWW_LIMITED}" = "yes" ] && playerdb="${limiteddb}"
 
-JQ=$(command -v jq >/dev/null 2>&1)
+JQ=$(command -v jq 2>&-)
 
 # eval TMWW_ALTSPATH="${TMWW_ALTSPATH:-${DIRCONFIG}/alts}"
 TMWW_ALTSPATH="${TMWW_ALTSPATH:-${DIRCONFIG}/alts}"

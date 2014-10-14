@@ -30,7 +30,7 @@ chardbtmp2=${TMWW_PRIVTMP}/chardb.temp2
 partydbtmp=${TMWW_PRIVTMP}/partydb.temp
 partydbtmp2=${TMWW_PRIVTMP}/partydb.temp2
 
-AGREP=$(command -v agrep >/dev/null 2>&1)
+AGREP=$(command -v agrep 2>&-)
 
 check_agrep() {
     if [ -z "${AGREP}" ]; then
