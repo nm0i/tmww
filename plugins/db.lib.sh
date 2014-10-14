@@ -34,8 +34,8 @@ itemfiles='*_item_db.txt
 fieldsmob='ID Name Jname LV HP SP EXP JEXP Range1 ATK1 ATK2 DEF MDEF
 STR AGI VIT INT DEX LUK Range2 Range3 Scale Race Element Mode Speed
 Adelay Amotion Dmotion
-D1id D1% D2id D2% D3id D3% D4id D4%
-D5id D5% D6id D6% D7id D7% D8id D8%
+D1id D1p D2id D2p D3id D3p D4id D4p
+D5id D5p D6id D6p D7id D7p D8id D8p
 Item1 Item2 MEXP ExpPer MVP1id MVP1per MVP2id MVP2per MVP3id MVP3per
 mutationcount mutationstrength'
 
@@ -47,23 +47,6 @@ Slot Gender Loc wLV eLV View UseScript'
 
 mobfieldsalias='drops d1id d2id d3id d4id d5id d6id d7id d8id
 fulldrops d1id d1p d2id d2p d3id d3p d4id d4p d5id d5p d6id d6p d7id d7p d8id d8p
-drop1id d1id
-drop2id d2id
-drop3id d3id
-drop4id d4id
-drop5id d5id
-drop6id d6id
-drop7id d7id
-drop8id d8id
-drop8id d8id
-drop1per d1p
-drop2per d2p
-drop3per d3p
-drop4per d4p
-drop5per d5p
-drop6per d6p
-drop7per d7p
-drop8per d8p
 stats str agi vit int dex luk
 lvl lv
 level lv
