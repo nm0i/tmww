@@ -23,18 +23,22 @@ _tmww_debug() {
 }
 
 # grab default config path as _opt_tmww_DIRCONFIG from tmww itself
-eval _opt_tmww_$( sed -n '/DIRCONFIG=/{p;q};15q' `command -v tmww 2>/dev/null` )
+eval _opt_tmww_$( sed -n '/DIRCONFIG=/{p;q};15q' `which tmww` )
 
 # IMPORTANT: action override is completed before config but plugins path may be changed using config
-#            in any way using default.conf
+#            in any way using default.conf without parsing INCLUDE configs
+#            1) try default.conf for PLUGINPATH
+#            2) if failed - set to default location
 #            feel free to change if you use custom setup
-_opt_tmww_pluginpath=$( sed -n '/^ *PLUGINPATH /{s/^ *PLUGINPATH  *//p;q};15q' ${_opt_tmww_DIRCONFIG}/default.conf )
+_opt_tmww_pluginpath=$( tmww -ug PLUGINPATH )
 eval _opt_tmww_pluginpath="${_opt_tmww_pluginpath:-${_opt_tmww_DIRCONFIG}/plugins}"
 #_tmww_debug pluginpath ${_opt_tmww_pluginpath}
 
-# IMPORTANT: using default.conf
+# IMPORTANT: using default.conf without parsing INCLUDE configs
+#            1) try default.conf for TMP
+#            2) if failed - set to default location
 #            change this variable if you have shared tmp in different location
-_opt_tmww_sharedtmp=$( sed -n '/^ *TMP /{s/^ *TMP  *//p;q};15q' ${_opt_tmww_DIRCONFIG}/default.conf )
+_opt_tmww_sharedtmp=$( tmww -ug TMP )
 eval _opt_tmww_sharedtmp="${_opt_tmww_sharedtmp:-/tmp}"
 #_tmww_debug sharedtmp ${_opt_tmww_sharedtmp}
 
@@ -139,7 +143,7 @@ _tmww_config() {
         #_tmww_debug action "$_opt_tmww_action" "$_opt_tmww_prefix"
 
         if (( $+functions[_tmww_plugin_$_opt_tmww_action] )); then
-            _call_function ret _tmww_plugin_$_opt_tmww_action || _message 'no more arguments'
+            _call_function ret _tmww_plugin_${_opt_tmww_action} || _message 'no more arguments'
         else
             _message "action has no completion"
         fi
