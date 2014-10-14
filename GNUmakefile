@@ -20,5 +20,5 @@ tests:
 #	@LC_ALL=C PATH="./bin:${PATH}" build-aux/shtest -E 'DIRCONFIG="tests/local/conf"' tests/local/*.t
 
 changelog:
-	@echo FIXME gitlog-to-changelog
+	@build-aux/gitlog-to-changelog --format="%h %s" | tr -s '\n' > ChangeLog
 

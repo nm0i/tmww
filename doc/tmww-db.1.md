@@ -8,7 +8,7 @@ Usage
 subcommand: item [ OPTS ]  
 
     get { NAME | [ id | name | db | FIELD+ ] by { id ID | name NAME } }
-    show [ names | ids | db | FIELD+ ] by { ids ID+ | names NAME+ | re REGEXP | itemset ITEMSET }
+    show { names | ids | db | FIELD+ } by { ids ID+ | names NAME+ | re REGEXP | itemset ITEMSET }
     mobs by { ids ID+ | names NAME+ | re REGEXP } -- show mobs dropping item/items
 
 subcommand: mob [ OPTS ]  
@@ -48,10 +48,12 @@ Format
 ------
 
 item_db.txt  
+
     ID, Name, Label, Type, Price, Sell, Weight, ATK, DEF, Range, Mbonus,
         Slot, Gender, Loc, wLV, eLV, View, {UseScript}
 
 mob_db.txt  
+
     ID, Name, Jname, LV, HP, SP, EXP, JEXP, Range1, ATK1, ATK2, DEF, MDEF,
         STR, AGI, VIT, INT, DEX, LUK, Range2, Range3, Scale, Race, Element,
         Mode, Speed, Adelay, Amotion, Dmotion,
@@ -120,6 +122,11 @@ Same as "mobfieldsalias". Default example:
     itemfieldsalias {
         i1 type typename atk def usescript
     }
+
+Bugs
+----
+Item and mob db fields are tmwa-specific and are hardcoded; default aliases
+too; completion updates only aliases defined in config.
 
 Copyright
 ---------

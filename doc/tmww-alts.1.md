@@ -34,13 +34,13 @@ subcommand: player -- players database handler
     remove PLAYER
     rename PLAYER to PLAYER
     add PLAYER FIELD value VALUE
-    add PLAYER FIELD element VALUE -- adding alts will automatically resolve charname into account
+    add PLAYER FIELD element VALUE -- adding alts will autoresolve charname into account
     resolve PLAYER -- resolve all player alts into accounts
     del PLAYER FIELD
     del PLAYER FIELD element VALUE
     get { CHAR | by { char CHAR | id ACCID } } -- dereference player entry
     ids PLAYER -- print all known associated account IDs
-    show [ ids | names | parties ] by { char CHAR | id CHAR | player PLAYER } -- lookup
+    show [ ids | names | parties ] by { char CHAR | id CHAR | player PLAYER }
     list with FIELD
     list with { FIELD [ not ] as VALUE | VALUE [ not ] in FIELD }+
     dump PLAYER -- dump JSONline record of PLAYER; tmww player dump veryape
@@ -55,6 +55,8 @@ subcommand: player -- players database handler
     lregen -- regenerate shortened playerdb version if limiteddb is in use
     FIXME merge FILENAME -- simple merge player records + sanitize
     FIXME forcemerge FILENAME -- replace duplicated records with new ones + sanitize
+
+subcommand: arseoscope CHAR -- observe player alias/number of known accounts/alts
 
 Glossary
 --------
@@ -80,7 +82,7 @@ dbplayers
 
 Description
 -----------
-alts.plugin require jq of version >= 1.4
+WARNING: alts.plugin require jq of version >= 1.4
 
 tmww plugin *alts* creates and perform all operations/lookup on players alts
 database and player lists. Database consists of few per server cleartext/jsonl
@@ -97,7 +99,7 @@ Most lookup commands expected output of which is single value take only first
 matching record. Collision detection is specific for each db.
 
 Players DB in two words: players.db -> records -> fields -> values. Each record
-has "player" alias. Character names with unknown account ids are listed in
+has "player" alias. Character names with unknown account IDs are listed in
 "alts" field. Every other known char is referenced over "accounts" field.
 
 Config
@@ -113,8 +115,8 @@ UPDATELIMITED : yes/no -> no
 Notes
 -----
 
-NOTE:   no _alts_ plugin actions are intended to be called from _actions_
-        config section.
+NOTE: no _alts_ plugin actions are intended to be called from _actions_
+      config section.
 
 Since whole thing is bunch of shell scripts working with text files, there's
 improvised lock per server when operation modifies alts db. Timeout is 5
@@ -143,12 +145,11 @@ Amount of alts on same account limited on query to 30.
 By defaul fuzzy search performed from huge slow regexp pattern constructed in
 script which is case insensitive, allow 1 absent char or 1 missed char. Fuzzy
 pattern will skip spaces and won't accept lot of special chars. See
-implementation for details. You can also fix it to use agrep uncommenting
-related lines. It's not recommended to run fuzzy search with pattern of less
-than 4 chars.
+implementation for details. You can use agrep instead (if you have it). It's
+not recommended to run fuzzy search with pattern of less than 4 chars.
 
 On add operation all duplicate chars will be removed to conflicts log. This
-operations is safe when character was moved to account with lower id.
+operation is safe when character was moved to account with lower id.
 
 Default merge strategy will remove all duplicate entries with lower account ids
 to conflicts log. Default chardb format lacks timestamps to correctly resolve
@@ -182,12 +183,12 @@ using it) tmww operation from "resolve" to "add" - it will only add char into
 chardb and skip playerdb.
 
 Records are usually referenced by _player_; there are dedicated commands to
-rename to made unintended change more case. There are 2 general use cases for
+rename and delete entry to lessen typo errors. There are 2 general use cases for
 this DB: automatic alts resolve and additional data storage to be then queried.
 
 First case require manual add of elements into _alts_ field, which are char
-names and get resolved into account ids on sanitize or resolve command or in
-future after matching char add.
+names and get resolved into account IDs on _sanitize_ or _resolve_ commands or
+in future after matching char resolve.
 
 Second case allow storing of associated emails or something like marking of
 active developers and tmwc members which allow queries like:
@@ -199,7 +200,7 @@ is. Duplicate backslashes if you want to insert two or more backslashes in
 row.
 
 Adding elements will only check if duplicate was in field, it doesn't touch
-diplicates in other fields or records. Sanitize won't touch them either, except
+duplicates in other fields or records. Sanitize won't touch them either, except
 _accounts_ and _alts_ fields.
 
 As a measure to preserve original ACL group of db files with multiuser access,
@@ -513,6 +514,12 @@ possible). Few commands has substring check on purpose, e.g. "player list".
 Substring matching is case sensitive e.g. in "player list with Chaos in forum",
 which will output "axzell", because he has "ChaosCrossAG" forum name, but with
 "player list with chaos in forum" is will output "chaosava".
+
+jq 1.4 added -S key to sort hashes allowing more readable diffs. If you have jq
+of earlier version just remove -S key from jq calls in _players.lib.sh_ .
+
+Default recommended fields and roles are hardcoded in 4 places: markdown manual
+source, plugin, zsh completion and optional validation script.
 
 Copyright
 ---------

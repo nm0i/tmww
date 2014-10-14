@@ -145,13 +145,28 @@ Util path is also used as storage for internal configs and data files.
 
 Files
 -----
-FIXME location of config
-FIXME location of plugins
-FIXME location of utils
+~/.config/tmww/*.conf  
+    default path to configs;
+    overridden from env with DIRCONFIG
+
+~/.config/tmww/plugins/*.plugin  
+    plugins; used with tmww -a , CMDACTION or in action section
+    overridden with PLUGINPATH
+
+~/.config/tmww/plugins/*.lib.sh  
+    functions shared between plugins
+
+~/.config/tmww/plugins/*.zsh  
+    completion code for plugin/config script; auto-included with OMZ plugin;
+
+~/.config/tmww/utils/
+    scripts and misc files/lists/configs reused between plugins and users;
+    overridden with UTILPATH
 
 Bugs
 ----
-FIXME notes about platform specific pitfalls, etc.
+All shell-related precautions apply here. Plugin-specific bugs covered in
+plugin manuals.
 
 Copyright
 ---------

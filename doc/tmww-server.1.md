@@ -15,13 +15,14 @@ subcommand: char -- character database handler
     [-cnar] [-f EXPR] [-s NUM] show { CHAR | [ parties | storage | vars | ids | chars | accs | db | FIELD+ ]
         by { char CHAR | id ID | pcid PCID } }
     dig REGEXP -- grep + show pcids by ids from grep matches
-    summary [ SUMMARY ] by { char CHAR | id ID | pcid PCID }
+    [ -t ] summary { gp | bp | exp | items } by { char CHAR | id ID | pcid PCID }
 
 subcommand: party -- party database handler  
 
+    { grep | fuzzy | agrep [ -e ERRORS ] } REGEXP -- search party name by pattern
     get { CHAR | by { char CHAR | pcid PCID } }
-    [-cnar] [-f EXPR] [-s NUM] show { CHAR | [ ids | chars | players | accs | db | FIELD+ ]
-        by { char CHAR | party PARTY | player PLAYER | pcid PCID } }
+    show { CHAR | [ pcids | ids | chars | players ]
+        by { char CHAR | party PARTY | partyid PARTYID | pcid PCID } }
     { grep | fuzzy | agrep [ -e ERRORS ] } PATTERN -- grep/approximate grep party name
     dig PATTERN -- grep + show ids/charname of party members
 
@@ -39,7 +40,7 @@ subcommand: player -- players database handler
     [-cnar] [-f EXPR] [-s NUM] get { CHAR | by { char CHAR | id ACCID | pcid PCID } }
     [-cnar] [-f EXPR] [-s NUM] show { PLAYER | [ ids | chars | parties | accs | db | FIELD+ ]
         by { char CHAR | id ID | pcid PCID } }
-    summary [ SUMMARY ] by { char CHAR | id ID | player PLAYER | pcid PCID }
+    [ -t ] summary { gp | bp | exp | items } by { char CHAR | id ID | player PLAYER | pcid PCID }
     list with FIELD
     list with { FIELD [ not ] as VALUE | VALUE [ not ] in FIELD }+
     dump PLAYER -- dump JSONline record of PLAYER; tmww player dump veryape
@@ -52,12 +53,12 @@ subcommand: player -- players database handler
     sanitize -- remove keys with 0 length - empty arrays and hashes with null value
         resolve alts into accounts, report duplicate accounts and alts
     lregen -- regenerate shortened playerdb version if limiteddb is in use
-    FIXME merge FILENAME -- simple merge player records + sanitize
-    FIXME force-merge FILENAME -- replace duplicated records with new ones + sanitize
 
-subcommand: select -- search inventory/storage
+subcommand: arseoscope CHAR -- observe player alias/number of known accounts/alts
 
-    select [-incs] by { ids ITEMID+ | names ITEMNAME+ | re REGEXP | itemsets GLOB+ }
+subcommand: select -- search inventory/storage  
+
+    [-incs] by { ids ITEMID+ | names ITEMNAME+ | re REGEXP | itemsets GLOB+ }
 
 Glossary
 --------
@@ -133,8 +134,8 @@ show" to get all chars associated with player alias.
     char [ opts ] show { CHAR | [ parties | storage | vars | ids | chars | accs | db | FIELD+ ]
         by { char CHAR | id ID | pcid PCID } }
     party get { CHAR | by { char CHAR | pcid PCID } }
-    party [ opts ] show { CHAR | [ ids | chars | players | accs | db | FIELD+ ]
-        by { char CHAR | party PARTY | player PLAYER | pcid PCID } }
+    party show { CHAR | [ pcids | ids | chars | players ]
+        by { char CHAR | party PARTY | partyid PARTYID | pcid PCID } }
     player [ opts ] get { CHAR | by { char CHAR | id ACCID | pcid PCID } }
     player [ opts ] show { PLAYER | [ ids | chars | parties | accs | db | FIELD+ ]
         by { char CHAR | id ID | pcid PCID } }
@@ -146,6 +147,7 @@ show" to get all chars associated with player alias.
 -c          field captions for custom fields (with FIELDS query)
 -n          suppress append accid/charname as last column in db/accs filter
 -a          suppress per-char fields and leave only per-account
+-t          append target when possible for summary commands
 -r          output raw tab-separated fields without pretty-printing
 -f EXPR     override cut fields, EXPR passed as "cut -f" argument value
 -s NUM      use backup suffix for all server files; for individual suffix define vars in shell
@@ -260,9 +262,9 @@ Lines starting with "#" are comments.
     FIELD CSVFIELD FNAME
 
 Line describes how to cut data: FIELD is field number in tab-separated data,
-CSVFIELD is field number in comma-separated data within obtained chunk (or
-"1"). Prepared data can be referenced as "FNAME" in filter expressions like
-"char show".
+CSVFIELD is "cut -f" expression for fields in comma-separated data within
+obtained chunk (or "1"). Prepared data can be referenced as "FNAME" in filter
+expressions like "char show".
 
 Server plugin comes with set of default fields, see source for details.
 
@@ -325,7 +327,7 @@ Default output is sorted by account IDs only.
         ids=$( mktemp )
         tp nlist with player | while read player; do
             tp ids ${player} >> "${ids}"
-            tp summary gp by player ${player}
+            tp summary -t gp by player ${player}
         done | sort -nr
         athena=$( tmww -g SERVERATHENA )
         aids=$( mktemp )
@@ -333,11 +335,11 @@ Default output is sorted by account IDs only.
         sort -n "${ids}" | uniq |
             comm --nocheck-order -23 "${aids}" - |
             while read id; do
-                tc summary gp by id ${id}
+                tc summary -t gp by id ${id}
             done | sort -nr
     }
 
-This way you may spot wealthy not-yet-associated aaccounts.
+This way you may spot wealthy not-yet-associated accounts.
 Same ranking may be done for other summary filters, e.g. exp and bp.
 
 Copyright

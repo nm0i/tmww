@@ -31,13 +31,13 @@ TMWW_SERVERSTORAGE="${TMWW_SERVERSTORAGE:-${TMWW_SERVERPATH}/world/save/storage.
 TMWW_SERVERSKILLDB="${TMWW_SERVERSKILLDB:-${TMWW_SERVERPATH}/world/map/db/skill_db.txt}"
 # TMWW_SERVER="${TMWW_SERVER:-${TMWW_SERVERPATH}/}"
 
-AGREP=/usr/bin/agrep
+AGREP=$(command -v agrep >/dev/null 2>&1)
 
 # chars allowed in query expression as field name
 fieldchars="-a-zA-Z0-9_\$\#"
 
 check_agrep() {
-    if ! command -v ${AGREP} >/dev/null 2>&1 ; then
+    if [ -z "${AGREP}" ]; then
         error "agrep not found. Aborting."
         return 1
     fi
@@ -93,6 +93,7 @@ accname login
 seen counter
 ip lastip
 qacc login counter lastip mail date time
+q1 login mail lvl gp sgp lastip gender
 '
 
 # args:

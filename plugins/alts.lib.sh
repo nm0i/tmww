@@ -30,15 +30,14 @@ chardbtmp2=${TMWW_PRIVTMP}/chardb.temp2
 partydbtmp=${TMWW_PRIVTMP}/partydb.temp
 partydbtmp2=${TMWW_PRIVTMP}/partydb.temp2
 
-AGREP=/usr/bin/agrep
+AGREP=$(command -v agrep >/dev/null 2>&1)
 
 check_agrep() {
-    if ! command -v ${AGREP} >/dev/null 2>&1 ; then
+    if [ -z "${AGREP}" ]; then
         error "agrep not found. Aborting."
         return 1
     fi
 }
-
 
 #
 # char

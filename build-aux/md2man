@@ -235,9 +235,9 @@ section == "SYNOPSIS" && ! /^ *$/ {
     # blank line
     } else if (NF == 0) {
         if (text) { print text; text = "" }
-        if (prevblankline == 0) {
-            print ".PP"
-        }
+        #if (prevblankline == 0) {
+        #    print ".PP"
+        #}
         prevblankline = 1
         next
 

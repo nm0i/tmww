@@ -21,7 +21,7 @@ playerchars="a-zA-Z0-9_\-"
 
 [ "${TMWW_LIMITED}" = "yes" ] && playerdb="${limiteddb}"
 
-JQ=/usr/bin/jq
+JQ=$(command -v jq >/dev/null 2>&1)
 
 # eval TMWW_ALTSPATH="${TMWW_ALTSPATH:-${DIRCONFIG}/alts}"
 TMWW_ALTSPATH="${TMWW_ALTSPATH:-${DIRCONFIG}/alts}"
@@ -36,7 +36,7 @@ playerdbtmp=${TMWW_PRIVTMP}/playerdb.temp
 playerdbtmp2=${TMWW_PRIVTMP}/playerdb.temp2
 
 check_jq() {
-    if ! command -v ${JQ} >/dev/null 2>&1 ; then
+    if [ -z "${JQ}" ]; then
         error "jq not found. Aborting."
         return 1
     fi

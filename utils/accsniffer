@@ -1,6 +1,5 @@
 #!/bin/sh
-# this script should not be run as run
-# and require user to be in same group as tcpick
+# this script require user to be in same group as tcpick
 # with tcpick capabilities set to cap_net_admin,cap_net_raw+eip
 #
 # accsniffer -- capture account ids, add to char db

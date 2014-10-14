@@ -11,9 +11,9 @@ WARNING:    some things in tests like $'\t' are not available dash
 
 NOTE:       running from configs with "s" prefix for reusing test files on
             development folder. Server op may rearrange configs
-            to call e.g.  char vs schar
+            to call e.g. char vs schar
 
-NOTE:       this tests do not cover whole possible combinations of queries
+NOTE:       these tests do not cover whole possible combinations of queries
 
 char get
 --------

@@ -100,6 +100,12 @@ custom fields
     ATK	DEF	
     0	0
     0	0
+    $ tmww item show fname by re terranite
+    chest_item_db.txt    767  TerraniteChestArmor
+    generic_item_db.txt  763  TerraniteOre
+    head_item_db.txt     766  TerraniteHelmet
+    leg_item_db.txt      768  TerraniteLegs
+    weapon_item_db.txt   762  TerraniteArrow
 
 priority of id.itemset vs names.itemset (testids.names.itemset should contain less elements)
 
