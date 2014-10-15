@@ -21,6 +21,7 @@ Options
 -q          quite test; exit code set to number of failed tests
             default is verbose output
 -r          refill all tests output (like cram -iy)
+-c          clear all model output from test (lower priority than -r)
 -i INDENT   indent (default is 4)
 -b          fail test on unhandled error code
 -e          keep default environment (don't inherit LC_ALL and PATH from shell)
