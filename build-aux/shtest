@@ -276,7 +276,8 @@ run_test() {
     parse_state="${state_ready}"
     test_result
     rm "${result}" 2>/dev/null
-    report "Finished ${test_count} test from $1, ${test_failed} failed, ${test_unhandledexit} unhandled exit codes"
+    report "Finished ${test_count} test from $1, ${test_failed} failed, " \
+        "${test_unhandledexit} unhandled exit codes"
     if [ -n "${shtest_refill}" ]; then
         mv "${errfile}" "$1"
         [ "$?" -ne 0 ] && report "Can't move refilled tests file back!"

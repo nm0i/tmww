@@ -15,7 +15,7 @@ subcommand: mob [ OPTS ]
 
     get { NAME | [ id | name | db | FIELD+ ] by { id ID | name NAME } }
     show [ names | ids | db | FIELD+ ] by { ids ID+ | names NAME+ | re REGEXP }
-    drops by { id ID | name NAME } -- show mob drops
+    drops { NAME | by { id ID | name NAME } } -- show mob drops
 
 Description
 -----------

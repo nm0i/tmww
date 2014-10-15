@@ -11,7 +11,7 @@ WARNING:    some things in tests like $'\t' are not available dash
 
 NOTE:       running from configs with "s" prefix for reusing test files on
             development folder. Server op may rearrange configs
-            to call e.g. char vs schar
+            to call e.g. char vs char
 
 NOTE:       these tests do not cover whole possible combinations of queries
 
@@ -20,18 +20,19 @@ char get
 
 regular tests
 
-    $ tmww schar get mage
+    $ tmww char get mage
     2000000
-    $ tmww schar get by pcid 150000
+    $ tmww char get by pcid 150000
     2000000
-    $ tmww schar get by char mage
+    $ tmww char get by char mage
     2000000
-    $ tmww schar get by id mage
+    $ tmww char get by id mage
+    ? 1
     Incorrect parameter: get by id mage
-    $ tmww schar get accs by char mage
+    $ tmww char get accs by char mage
     accid    login   hash                             date                     g  counter  ?  mail     ?  ?  lastip     ?  ?
     2000000  newbie  !Ms^6_$3749dfee1445abfa06907413  2014-09-29 21:42:23.044  M  98       0  a@a.com  -  0  127.0.0.1  !  0
-    $ tmww schar get vars by char mage
+    $ tmww char get vars by char mage
     TUT_var,1404254543
     FLAGS,256
     TUTORIAL,67108864
@@ -42,13 +43,13 @@ regular tests
     QUEST_Barbarians,8
     BOSS_POINTS,40
     
-    $ tmww schar get db by char mage
+    $ tmww char get db by char mage
     pcid    accid      charname  level    exp/gp         hp/mp              stats            ?    ?      partyid  ?      ?                  location      resp             ?                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       inventory                                                                                             ?                                                                                                                                                                skills  vars
     150001  2000000,1  mage      0,109,3  906582,737,43  1011,1064,236,236  1,85,80,99,1,70  3,2  0,0,0  103,0,0  1,1,0  1,601,636,658,768  034-1,70,100  031-3,227,239,0  0,1201,1,0,1,0,0,0,0,0,0,0 0,903,1,0,1,0,0,0,0,0,0,0 0,904,100,0,1,0,0,0,0,0,0,0 0,808,1,0,1,0,0,0,0,0,0,0 0,1202,1,0,1,0,0,0,0,0,0,0 0,881,1,0,1,0,0,0,0,0,0,0 0,1171,1,0,1,0,0,0,0,0,0,0 0,880,1,0,1,0,0,0,0,0,0,0 0,4011,1,0,1,0,0,0,0,0,0,0 0,2202,1,0,1,0,0,0,0,0,0,0 0,879,1,0,1,0,0,0,0,0,0,0 0,758,1,0,1,0,0,0,0,0,0,0 0,579,1,2,1,0,0,0,0,0,0,0 0,735,1,0,1,0,0,0,0,0,0,0 0,743,2,0,1,0,0,0,0,0,0,0 0,718,470,0,1,0,0,0,0,0,0,0 0,613,84,0,1,0,0,0,0,0,0,0 0,611,8,0,1,0,0,0,0,0,0,0 0,585,1,0,1,0,0,0,0,0,0,0 0,601,1,32,1,0,0,0,0,0,0,0 0,658,1,512,1,0,0,0,0,0,0,0 0,518,23,0,1,0,0,0,0,0,0,0 0,4001,8,0,1,0,0,0,0,0,0,0 0,4021,8,0,1,0,0,0,0,0,0,0 0,4025,3,0,1,0,0,0,0,0,0,0 0,4023,9,0,1,0,0,0,0,0,0,0 0,501,5,0,1,0,0,0,0,0,0,0 0,521,1,0,1,0,0,0,0,0,0,0 0,704,192,0,1,0,0,0,0,0,0,0 0,535,1,0,1,0,0,0,0,0,0,0 0,521,1,0,1,0,0,0,0,0,0,0 0,545,1,0,1,0,0,0,0,0,0,0 0,1199,860,0,1,0,0,0,0,0,0,0 0,740,365,0,1,0,0,0,0,0,0,0 0,714,100,0,1,0,0,0,0,0,0,0 0,505,286,0,1,0,0,0,0,0,0,0 0,4026,15,0,1,0,0,0,0,0,0,0 0,4024,3,0,1,0,0,0,0,0,0,0 0,5061,1,0,1,0,0,0,0,0,0,0 0,502,2,0,1,0,0,0,0,0,0,0 0,614,94,0,1,0,0,0,0,0,0,0 0,660,100,0,1,0,0,0,0,0,0,0 0,636,1,256,1,0,0,0,0,0,0,0 0,539,12,0,1,0,0,0,0,0,0,0 0,701,3,0,1,0,0,0,0,0,0,0 0,657,7,0,1,0,0,0,0,0,0,0 0,768,1,1,1,0,0,0,0,0,0,0 0,865,1,0,1,0,0,0,0,0,0,0 0,861,1,0,1,0,0,0,0,0,0,0 0,562,96,0,1,0,0,0,0,0,0,0 0,703,93,0,1,0,0,0,0,0,0,0 0,876,1,64,1,0,0,0,0,0,0,0 0,532,1,4,1,0,0,0,0,0,0,0 0,791,1,0,1,0,0,0,0,0,0,0   1,1 2,1 3,2 45,9 339,1 340,2 341,2 342,2 343,2 344,2 345,2 346,2 350,9 352,9 353,9 354,262153 355,1   TUT_var,1404254543 FLAGS,256 TUTORIAL,67108864 MAGIC_EXPERIENCE,1253338 QUEST_MAGIC,61440 PC_DIE_COUNTER,7 TravelFound,17924 QUEST_Barbarians,8 BOSS_POINTS,40 
-    $ tmww schar get q1 by char mage
+    $ tmww char get q2 by char mage
     lvl  gp  sgp  lastip     g  accid    charname  party      accid    charname
     109  43       127.0.0.1  M  2000000  mage      mageparty  2000000  mage
-    $ tmww schar get skills by char mage
+    $ tmww char get skills by char mage
     Emote (#1): 1
     Trade (#2): 1
     Party (#3): 2
@@ -66,7 +67,7 @@ regular tests
     Poison Resistance (#353): 9
     Astral Soul (#354): 262153
     Raging (#355): 1
-    $ tmww schar get inventory by char mage
+    $ tmww char get inventory by char mage
     ID    N    Name
     658   1    WarlordPlate
     791   1    YetiSkinShirt
@@ -124,88 +125,88 @@ regular tests
 
 checking if empty fields generated with different methods do not shift columns
 
-    $ tmww schar get sgp by char mage
+    $ tmww char get sgp by char mage
     sgp  accid    charname
          2000000  mage
-    $ tmww schar get PerCharVar by char mage
+    $ tmww char get PerCharVar by char mage
     PerCharVar  accid    charname
                 2000000  mage
-    $ tmww schar get fstats by char mage
+    $ tmww char get fstats by char mage
     fstats           accid    charname
     1,85,80,99,1,70  2000000  mage
 
 options
 
-    $ tmww schar -nca get q1 by char mage
+    $ tmww char -nca get q2 by char mage
        127.0.0.1  M  2000000
 
 fallpits
 FIXME
 
-    $ tmww schar get DoesNotExist
+    $ tmww char get DoesNotExist
 
 char show
 ---------
 
 regular tests
 
-    $ tmww schar show mage
+    $ tmww char show mage
     2000000 farmer
     2000000 mage
     2000000 mmadmin
-    $ tmww schar show chars by char mage
+    $ tmww char show chars by char mage
     farmer
     mage
     mmadmin
-    $ tmww schar show ids by id 2000000
+    $ tmww char show ids by id 2000000
     2000000 farmer
     2000000 mage
     2000000 mmadmin
-    $ tmww schar show pcids by pcid 150000
+    $ tmww char show pcids by pcid 150000
     150000 2000000 farmer
     150001 2000000 mage
     150009 2000000 mmadmin
-    $ tmww schar show vars by char user3c2
+    $ tmww char show vars by char user3c2
     2000003	#BankAccount,29 
-    $ tmww schar show db by char mage
+    $ tmww char show db by char mage
     pcid    accid      charname  level    exp/gp              hp/mp              stats             ?       ?      partyid  ?       ?                   location      resp             ?                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       inventory                                                                                             ?                                                                                                                                                                skills  vars
     150000  2000000,0  farmer    0,100,1  99041,19029,999982  235,811,176,218    2,99,60,99,90,49  9,0     0,0,0  101,0,0  6,1,0   11,0,1217,5055,768  007-1,85,78   042-2,26,26,0    0,1201,1,0,1,0,0,0,0,0,0,0 0,903,1,0,1,0,0,0,0,0,0,0 0,904,100,0,1,0,0,0,0,0,0,0 0,808,1,0,1,0,0,0,0,0,0,0 0,1202,1,0,1,0,0,0,0,0,0,0 0,881,1,0,1,0,0,0,0,0,0,0 0,1217,1,256,1,0,0,0,0,0,0,0 0,4012,1,128,1,0,0,0,0,0,0,0 0,5055,1,512,1,0,0,0,0,0,0,0 0,768,1,1,1,0,0,0,0,0,0,0 0,735,1,0,1,0,0,0,0,0,0,0 0,1199,4197,32768,1,0,0,0,0,0,0,0 0,567,100,0,1,0,0,0,0,0,0,0 0,568,100,0,1,0,0,0,0,0,0,0 0,562,50,0,1,0,0,0,0,0,0,0 0,541,132,0,1,0,0,0,0,0,0,0 0,879,1,8,1,0,0,0,0,0,0,0 0,878,1,34,1,0,0,0,0,0,0,0 0,533,3,0,1,0,0,0,0,0,0,0 0,4001,3,0,1,0,0,0,0,0,0,0 0,862,98,0,1,0,0,0,0,0,0,0 0,505,7,0,1,0,0,0,0,0,0,0 0,521,1,0,1,0,0,0,0,0,0,0 0,540,18,0,1,0,0,0,0,0,0,0 0,4002,1,0,1,0,0,0,0,0,0,0 0,526,1,0,1,0,0,0,0,0,0,0 0,537,3,0,1,0,0,0,0,0,0,0 0,518,2,0,1,0,0,0,0,0,0,0 0,611,3,0,1,0,0,0,0,0,0,0 0,501,2,0,1,0,0,0,0,0,0,0 0,521,1,0,1,0,0,0,0,0,0,0 0,521,1,0,1,0,0,0,0,0,0,0 0,528,1,0,1,0,0,0,0,0,0,0 0,535,4,0,1,0,0,0,0,0,0,0 0,528,1,0,1,0,0,0,0,0,0,0 0,525,1,0,1,0,0,0,0,0,0,0 0,4003,1,0,1,0,0,0,0,0,0,0 0,1251,5,0,1,0,0,0,0,0,0,0 0,718,2,0,1,0,0,0,0,0,0,0 0,681,1,0,1,0,0,0,0,0,0,0 0,680,3,0,1,0,0,0,0,0,0,0 0,824,37,0,1,0,0,0,0,0,0,0 0,822,111,0,1,0,0,0,0,0,0,0 0,4024,37,0,1,0,0,0,0,0,0,0 0,704,181,0,1,0,0,0,0,0,0,0 0,1248,1,0,1,0,0,0,0,0,0,0 0,683,4,0,1,0,0,0,0,0,0,0 0,1252,3,0,1,0,0,0,0,0,0,0 0,682,1,0,1,0,0,0,0,0,0,0 0,565,3,0,1,0,0,0,0,0,0,0 0,743,1,0,1,0,0,0,0,0,0,0 0,1202,1,0,1,0,0,0,0,0,0,0 0,1201,1,0,1,0,0,0,0,0,0,0                         3,2 339,1 340,2 341,2 342,2 343,2 344,2 345,2 346,2 352,262153                                        TUT_var,1404076785 FLAGS,256 QUEST_MAGIC,61440 TravelFound,516 MAGIC_EXPERIENCE,8000 QUEST_NorthTulimshar,327680 
     150001  2000000,1  mage      0,109,3  906582,737,43       1011,1064,236,236  1,85,80,99,1,70   3,2     0,0,0  103,0,0  1,1,0   1,601,636,658,768   034-1,70,100  031-3,227,239,0  0,1201,1,0,1,0,0,0,0,0,0,0 0,903,1,0,1,0,0,0,0,0,0,0 0,904,100,0,1,0,0,0,0,0,0,0 0,808,1,0,1,0,0,0,0,0,0,0 0,1202,1,0,1,0,0,0,0,0,0,0 0,881,1,0,1,0,0,0,0,0,0,0 0,1171,1,0,1,0,0,0,0,0,0,0 0,880,1,0,1,0,0,0,0,0,0,0 0,4011,1,0,1,0,0,0,0,0,0,0 0,2202,1,0,1,0,0,0,0,0,0,0 0,879,1,0,1,0,0,0,0,0,0,0 0,758,1,0,1,0,0,0,0,0,0,0 0,579,1,2,1,0,0,0,0,0,0,0 0,735,1,0,1,0,0,0,0,0,0,0 0,743,2,0,1,0,0,0,0,0,0,0 0,718,470,0,1,0,0,0,0,0,0,0 0,613,84,0,1,0,0,0,0,0,0,0 0,611,8,0,1,0,0,0,0,0,0,0 0,585,1,0,1,0,0,0,0,0,0,0 0,601,1,32,1,0,0,0,0,0,0,0 0,658,1,512,1,0,0,0,0,0,0,0 0,518,23,0,1,0,0,0,0,0,0,0 0,4001,8,0,1,0,0,0,0,0,0,0 0,4021,8,0,1,0,0,0,0,0,0,0 0,4025,3,0,1,0,0,0,0,0,0,0 0,4023,9,0,1,0,0,0,0,0,0,0 0,501,5,0,1,0,0,0,0,0,0,0 0,521,1,0,1,0,0,0,0,0,0,0 0,704,192,0,1,0,0,0,0,0,0,0 0,535,1,0,1,0,0,0,0,0,0,0 0,521,1,0,1,0,0,0,0,0,0,0 0,545,1,0,1,0,0,0,0,0,0,0 0,1199,860,0,1,0,0,0,0,0,0,0 0,740,365,0,1,0,0,0,0,0,0,0 0,714,100,0,1,0,0,0,0,0,0,0 0,505,286,0,1,0,0,0,0,0,0,0 0,4026,15,0,1,0,0,0,0,0,0,0 0,4024,3,0,1,0,0,0,0,0,0,0 0,5061,1,0,1,0,0,0,0,0,0,0 0,502,2,0,1,0,0,0,0,0,0,0 0,614,94,0,1,0,0,0,0,0,0,0 0,660,100,0,1,0,0,0,0,0,0,0 0,636,1,256,1,0,0,0,0,0,0,0 0,539,12,0,1,0,0,0,0,0,0,0 0,701,3,0,1,0,0,0,0,0,0,0 0,657,7,0,1,0,0,0,0,0,0,0 0,768,1,1,1,0,0,0,0,0,0,0 0,865,1,0,1,0,0,0,0,0,0,0 0,861,1,0,1,0,0,0,0,0,0,0 0,562,96,0,1,0,0,0,0,0,0,0 0,703,93,0,1,0,0,0,0,0,0,0 0,876,1,64,1,0,0,0,0,0,0,0 0,532,1,4,1,0,0,0,0,0,0,0 0,791,1,0,1,0,0,0,0,0,0,0   1,1 2,1 3,2 45,9 339,1 340,2 341,2 342,2 343,2 344,2 345,2 346,2 350,9 352,9 353,9 354,262153 355,1   TUT_var,1404254543 FLAGS,256 TUTORIAL,67108864 MAGIC_EXPERIENCE,1253338 QUEST_MAGIC,61440 PC_DIE_COUNTER,7 TravelFound,17924 QUEST_Barbarians,8 BOSS_POINTS,40 
     150009  2000000,2  mmadmin   0,99,1   0,0,999966          535,535,110,110    9,9,1,1,9,1       1544,0  0,0,0  0,0,0    12,3,0  0,0,0,0,0           007-1,85,77   042-2,26,26,0    0,1201,1,0,1,0,0,0,0,0,0,0 0,903,1,0,1,0,0,0,0,0,0,0 0,904,100,0,1,0,0,0,0,0,0,0 0,808,1,0,1,0,0,0,0,0,0,0 0,1202,1,0,1,0,0,0,0,0,0,0 0,881,1,0,1,0,0,0,0,0,0,0 0,903,1,0,1,0,0,0,0,0,0,0 0,862,1,0,1,0,0,0,0,0,0,0                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     2,1 3,2                                                                                               TUT_var,1411769114 FLAGS,256 QUEST_NorthTulimshar,65536 
-    $ tmww schar show accs by char mage
+    $ tmww char show accs by char mage
     accid    login   hash                             date                     g  counter  ?  mail     ?  ?  lastip     ?  ?
     2000000  newbie  !Ms^6_$3749dfee1445abfa06907413  2014-09-29 21:42:23.044  M  98       0  a@a.com  -  0  127.0.0.1  !  0
-    $ tmww schar show parties by char mage
+    $ tmww char show parties by char mage
     parties  accid    charname
              2000000  farmer
              2000000  mage
              2000000  mmadmin
-    $ tmww schar show storage by char mage
+    $ tmww char show storage by char mage
     ID   N   Name
     753  13  BatWing
     754  11  BatTeeth
     743  16  Acorn
-    $ tmww schar show "#nothing" AgainNothing by char mage
+    $ tmww char show "#nothing" AgainNothing by char mage
     #nothing  AgainNothing  accid    charname
                             2000000  farmer
                             2000000  mage
                             2000000  mmadmin
-    $ tmww schar -a show "#nothing" AgainNothing by char mage
+    $ tmww char -a show "#nothing" AgainNothing by char mage
     #nothing  accid
               2000000
 
 sorts, options
 
-    $ tmww schar -nca get q1 by char mage
+    $ tmww char -nca get q2 by char mage
        127.0.0.1  M  2000000
-    $ tmww schar -cr show lvl PC_DIE_COUNTER by char mage | sort -k 1,1 | cat
+    $ tmww char -cr show lvl PC_DIE_COUNTER by char mage | sort -k 1,1 | cat
     100	 	2000000	farmer
     109	7	2000000	mage
     99	 	2000000	mmadmin
 
 other
 
-    $ tmww schar fuzzy user1c
+    $ tmww char fuzzy user1c
     user1c1
     user2c1
     user3c1
@@ -216,14 +217,14 @@ other
 party
 -----
 
-    $ tmww sparty dig par
+    $ tmww party dig par
     2000000 farmer                   -- party2
     2000000 mage                     -- mageparty
     2000003 user3c2                  -- mageparty
     2000003 user3c2                  -- mageparty
-    $ tmww sparty get mage
+    $ tmww party get mage
     mageparty
-    $ tmww sparty show pcids by char mage
+    $ tmww party show pcids by char mage
     150001 2000000 mage
     150008 2000003 user3c2
     150008 2000003 user3c2
@@ -231,23 +232,23 @@ party
 player get
 ----------
 
-    $ tmww splayer get by pcid 150000
+    $ tmww player get by pcid 150000
 
 player show
 -----------
 
-    $ tmww splayer show pcids by char mage
+    $ tmww player show pcids by char mage
 
 char summary
 ------------
 
-    $ tmww schar summary gp by char mage
+    $ tmww char summary gp by char mage
     1999991
-    $ tmww schar summary bp by char mage
+    $ tmww char summary bp by char mage
     40
-    $ tmww schar summary exp by char mage
+    $ tmww char summary exp by char mage
     406240051
-    $ tmww schar summary items by char mage
+    $ tmww char summary items by char mage
     ID    N     Name
     658   1     WarlordPlate
     791   1     YetiSkinShirt
@@ -334,19 +335,20 @@ char summary
 player summary
 --------------
 
-    $ tmww splayer summary gp by char mage
+    $ tmww player summary gp by char mage
     1999991
-    $ tmww splayer summary gp by player p1
+    $ tmww player summary gp by player p1
+    ? 1
     No such player: p1
-    $ tmww splayer summary gp by id 2000001
+    $ tmww player summary gp by id 2000001
     150
-    $ tmww splayer summary gp by pcid 150000
+    $ tmww player summary gp by pcid 150000
     1999991
-    $ tmww splayer summary bp by char mage
+    $ tmww player summary bp by char mage
     40
-    $ tmww splayer summary exp by char mage
+    $ tmww player summary exp by char mage
     406240051
-    $ tmww splayer summary items by char mage
+    $ tmww player summary items by char mage
     ID    N     Name
     658   1     WarlordPlate
     791   1     YetiSkinShirt

@@ -884,6 +884,10 @@ aux_mob_drops_by_name() {
 
 func_mob_drops() {
     local criterion
+    [ -z "$2" -a -n "$1" ] && {
+        aux_mob_drops_by_name "$@" || return 1
+        return 0
+    }
     criterion=''
     [ "$1" != "by" ] && { error_incorrect; return 1; }
     shift

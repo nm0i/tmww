@@ -33,7 +33,14 @@ _opt_tmww_use_db=1
 #            change this variable if you have custom setup
 if (( ! $+_opt_tmww_serverdbpath )); then
     _opt_tmww_serverdbpath=$( tmww -ug SERVERDBPATH )
-    eval _opt_tmww_serverdbpath="${_opt_tmww_serverdbpath:-${HOME}/tmwAthena/tmwa-server-data/world/map/db}"
+    if [ -z "${_opt_tmww_serverdbpath}" ]; then
+        _opt_tmww_serverdbpath=$( tmww -ug SERVERPATH )
+        if [ -n "${_opt_tmww_serverdbpath}" ]; then
+            _opt_tmww_serverdbpath="${_opt_tmww_serverdbpath}/world/map/db"
+        else
+            _opt_tmww_serverdbpath="${HOME}/tmwAthena/tmwa-server-data/world/map/db"
+        fi
+    fi
 fi
 
 # IMPORTANT: using default.conf
@@ -325,7 +332,7 @@ _tmww_plugin_db_mob_args() {
         local ops; ops=(
             'get:"{ NAME | [ id | name | db | FIELD+ ] by { id ID | name NAME } }"'
             'show:"[ names | ids | db | FIELD+ ] by { ids ID+ | names NAME+ | re REGEXP }"'
-            'drops:"by { id ID | name NAME } -- show mob drops"'
+            'drops:"{ NAME | by { id ID | name NAME } } -- show mob drops"'
         )
         _alternative "subop:subcommand operation:((${ops}))"
     else
@@ -410,15 +417,19 @@ _tmww_plugin_db_mob_show() {
 }
 
 # drops by { id ID | name NAME }
-_tmww_plugin_db_item_mobs() {
+_tmww_plugin_db_mob_drops() {
     _regex_arguments _cmd /$'[^\0]#\0'/ \
-        /$'by\0'/ ":mob:$_desc_mob:(by)" \
         \( \
-            /$'name\0'/ ":mob:$_desc_mob:(name)" \
-            /$'[^\0]##\0'/ ':mobs: :_tmww_arg_mobs' \
+            /$'by\0'/ ":mob:$_desc_mob:(by)" \
+            \( \
+                /$'name\0'/ ":mob:$_desc_mob:(name)" \
+                /$'[^\0]##\0'/ ':mobs: :_tmww_arg_mobs' \
+            \| \
+                /$'id\0'/ ":mob:$_desc_mob:(id)" \
+                /$'[^\0]##\0'/ ":mob:$_desc_arg_mobid:" \
+            \) \
         \| \
-            /$'id\0'/ ":mob:$_desc_mob:(id)" \
-            /$'[^\0]##\0'/ ":mob:$_desc_arg_mobid:" \
+            /$'[^\0]##\0'/ ':mobs: :_tmww_arg_mobs' \
         \)
     _cmd "$@"
 }
