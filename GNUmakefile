@@ -1,7 +1,11 @@
 MANSRCPATH := doc
 MANPATH := man
-MANSRC := $(wildcard $(MANSRCPATH)/*.[0-9].md )
-MAN := $(patsubst $(MANSRCPATH)%,$(MANPATH)%,$(MANSRC:.md=))
+MAN1SRC := $(wildcard $(MANSRCPATH)/*.1.md )
+MAN5SRC := $(wildcard $(MANSRCPATH)/*.5.md )
+MAN7SRC := $(wildcard $(MANSRCPATH)/*.7.md )
+MAN1 := $(patsubst $(MANSRCPATH)/%,$(MANPATH)/man1/%,$(MAN1SRC:.md=))
+MAN5 := $(patsubst $(MANSRCPATH)/%,$(MANPATH)/man5/%,$(MAN5SRC:.md=))
+MAN7 := $(patsubst $(MANSRCPATH)/%,$(MANPATH)/man7/%,$(MAN7SRC:.md=))
 
 .PHONY: clean tests changelog
 
@@ -10,9 +14,15 @@ all: man
 clean:
 	@find -name '*~' -delete
 
-man: $(MAN)
+man: $(MAN1) $(MAN5) $(MAN7)
 
-$(MAN) : $(MANPATH)/% : $(MANSRCPATH)/%.md
+$(MAN1) : $(MANPATH)/man1/%.1 : $(MANSRCPATH)/%.1.md
+	m4 -P build-aux/tpl.m4 $< | build-aux/md2man -v title="$<" > $@
+
+$(MAN5) : $(MANPATH)/man5/%.5 : $(MANSRCPATH)/%.5.md
+	m4 -P build-aux/tpl.m4 $< | build-aux/md2man -v title="$<" > $@
+
+$(MAN7) : $(MANPATH)/man7/%.7 : $(MANSRCPATH)/%.7.md
 	m4 -P build-aux/tpl.m4 $< | build-aux/md2man -v title="$<" > $@
 
 tests:

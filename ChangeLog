@@ -1,4 +1,8 @@
 2014-10-15  willee  <v4r@trioptimum.com>
+	fe3603a fix
+	e8b9ffb add shtest -c option
+	06980fd fix
+	14482f6 configs cleanup
 	297776e re: re: re: re: re: fix
 	ce28cd8 re: re: re: re: fix
 	0d2d893 re: re: re: fix
