@@ -1233,13 +1233,17 @@ aux_party_show_ids_by_partyid() {
 }
 
 aux_party_show_chars_by_party() {
-    ${AWK} ${AWKPARAMS} -v patt="$1" -F '\t' -- '
+    local chparty
+    chparty=$( sed_chars "$1" )
+    ${AWK} ${AWKPARAMS} -v patt="${chparty}" -F '\t' -- '
         $2==patt { for (i=4;i<NF;i+=2) print $(i+1) ; exit }
     ' "${TMWW_SERVERPARTY}"
 }
 
 aux_party_show_ids_by_party() {
-    ${AWK} ${AWKPARAMS} -v patt="$1" -F '\t' -- '
+    local chparty
+    chparty=$( sed_chars "$1" )
+    ${AWK} ${AWKPARAMS} -v patt="${chparty}" -F '\t' -- '
         $2==patt { for (i=4;i<NF;i+=2) { split($i,id,","); print id[1],$(i+1) } ; exit }
     ' "${TMWW_SERVERPARTY}"
 }
