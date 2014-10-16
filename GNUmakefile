@@ -7,7 +7,7 @@ MAN1 := $(patsubst $(MANSRCPATH)/%,$(MANPATH)/man1/%,$(MAN1SRC:.md=))
 MAN5 := $(patsubst $(MANSRCPATH)/%,$(MANPATH)/man5/%,$(MAN5SRC:.md=))
 MAN7 := $(patsubst $(MANSRCPATH)/%,$(MANPATH)/man7/%,$(MAN7SRC:.md=))
 
-.PHONY: clean tests changelog
+.PHONY: clean tests changelog local-install
 
 all: man
 
@@ -31,4 +31,14 @@ tests:
 
 changelog:
 	@build-aux/gitlog-to-changelog --format="%h %s" | tr -s '\n' > ChangeLog
+
+# upgrade configs, clear completion cache, upgrade completion code
+multiuser:
+	@rm -rf ~/.config/tmww
+	@mkdir -p ~/.config/tmww
+	@cp -RP conf/* ~/.config/tmww
+	@mkdir -p ~/.tmp/lock
+	@rm ~/.oh-my-zsh/cache/TMWW*
+	@mkdir -p ~/.oh-my-zsh/custom/plugins/tmww
+	@cp ./zsh/tmww.plugin.zsh ~/.oh-my-zsh/custom/plugins/tmww
 
