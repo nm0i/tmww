@@ -51,13 +51,13 @@ check_agrep() {
 # 2 -- charname
 aux_char_conflicts() {
     chname=$( sed_chars "$2" )
-    # set back IFS for AWKPARAMS
-    IFS=${backifs}
-    ${AWK} ${AWKPARAMS} -v chname="${chname}" -v chline="$1 $2" -v rundate="$(date -Ru)" \
+    # double escaping: awk param, regex pattern
+    chescaped=$( printf "%s" "${chname}" | sed 's/\\/\\\\/g' )
+    ${AWK} ${AWKPARAMS} -v chname="${chescaped}" -v chline="$1 ${chname}" -v rundate="$(date -Ru)" \
         -v charconflicts="${charconflicts}" -- '
         function is_empty(checked_array,    checked_index) {
             for (checked_index in checked_array) return 0; return 1 }
-        $0 ~ "^........" chname "$" {
+        $0 ~ "^....... " chname "$" {
             if ( $0 != chline )
                 a [ NR ] = $0;
             next
@@ -70,12 +70,9 @@ aux_char_conflicts() {
             }
         }
     ' "${chardbtmp}" > "${chardbtmp2}"
-    IFS=${uniqifs}
 }
 
 func_char_add() {
-    local IFS
-    IFS=${uniqifs}
     if [ "$1" = "id" ]; then
         if [ ! -z "$2" ]; then
             accid="$2"
@@ -90,8 +87,8 @@ func_char_add() {
     set_db_lock
     cp -f "${chardb}" "${chardbtmp}" >/dev/null 2>&1
     # check for collisions
-    aux_char_conflicts "$accid" "$charname"
-    printf "%s %s\n" "$accid" "$charname" >> "${chardbtmp2}"
+    aux_char_conflicts "${accid}" "${charname}"
+    printf "%s %s\n" "${accid}" "${charname}" >> "${chardbtmp2}"
     sort -n "${chardbtmp2}" | uniq > "${chardbtmp}"
     store_shared "${chardbtmp}" "${chardb}"
     unset_db_lock
@@ -343,8 +340,7 @@ aux_char_sanitize() {
 
 # args: -- no
 func_char_sanitize() {
-    [ -n "$2" ] && { error_toomuch; return 1; }
-    [ -z "$1" ] && { error_missing; return 1; }
+    [ -n "$1" ] && { error_toomuch; return 1; }
     set_db_lock
     cp -f "${chardb}" "${chardbtmp}" >/dev/null 2>&1
     echo "sanitation on $(date -Ru)" >> "${charconflicts}"
@@ -375,12 +371,13 @@ func_char_merge() {
 # 1 -- partyname
 # 2 -- charname
 aux_party_conflicts() {
+    chparty=$( sed_chars "$1" )
     chname=$( sed_chars "$2" )
-    chparty=$( printf "%s\t%s" "$1" "$2" )
-    # set back IFS for AWKPARAMS
-    IFS=${backifs}
+    chparty=$( printf "%s\t%s" "${chparty}" "$2" )
+    # double escaping: awk param, regex pattern
+    chescaped=$( printf "%s" "${chname}" | sed 's/\\/\\\\/g' )
     ${AWK} ${AWKPARAMS} -F "" -v rundate="$(date -Ru)" -v partyconflicts="${partyconflicts}" \
-        -v chparty="${chparty}" -v chname="${chname}" -- '
+        -v chparty="${chparty}" -v chname="${chescaped}" -- '
         function is_empty(checked_array,    checked_index) {
             for (checked_index in checked_array) return 0; return 1 }
         $0 ~ "\t" chname "$" {
@@ -396,12 +393,9 @@ aux_party_conflicts() {
             }
         }
     ' "${partydbtmp}" > "${partydbtmp2}"
-    IFS=${uniqifs}
 }
 
 func_party_add(){
-    local IFS
-    IFS=${uniqifs}
     if [ "$1" = "party" ]; then
         if [ ! -z "$2" ]; then
             partyname=$2
@@ -489,6 +483,7 @@ func_party_dig() {
 }
 
 func_party_get() {
+    local chname
     if ! [ -z "$2" -a ! -z "$1" ]; then
         if [ "$1" = "by" -a "$2" = "char" ]; then
             shift 2
@@ -500,7 +495,9 @@ func_party_get() {
 }
 
 aux_party_show_chars_by_party() {
-    ${AWK} ${AWKPARAMS} -v party="$1" -- '
+    local chparty
+    chparty=$( sed_chars "$1" )
+    ${AWK} ${AWKPARAMS} -v party="${chparty}" -- '
     BEGIN { matched = 0; FS = "\t" }
     { if ( $1 == party ) { print $2; matched = 1; }
       else { if ( matched == 1 ) exit ; } }
@@ -516,7 +513,9 @@ aux_party_show_ids_by_party() {
 # there's obvious way to flood it just by recreating char on free account slot
 # multiple times
 aux_party_show_chars_by_char() {
-    ${AWK} ${AWKPARAMS} -v party="$1" -- '
+    local chname
+    chname=$( sed_chars "$1" )
+    ${AWK} ${AWKPARAMS} -v char="${chname}" -- '
     BEGIN { matched = 0; maxchars = 15 ; charcount = ""
         prev_party = "" ; split("", charalts); FS="\t" }
     {
@@ -533,7 +532,7 @@ aux_party_show_chars_by_char() {
             charalts [ ++charcount ] = $2
         }
         prev_party = $1
-        if ( party == $2) matched = 1
+        if ( $2 == char ) matched = 1
     }
     END {
         if ( matched == 1 ) {

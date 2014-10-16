@@ -192,7 +192,8 @@ process_result() {
         sed "s/^/${shtest_indent}/" "${result}" >> "${errfile}"
         return
     fi
-    ${AWK} -v output="${output}" -- '
+    e=$(printf "%s\n" "${output}" | sed 's/\\/\\\\/g')
+    ${AWK} -v output="$e" -- '
         BEGIN { split(output,o,"\n")}
         {
             if (o[NR] ~ / \(re\)$/) {
@@ -229,12 +230,15 @@ runcommand() {
 }
 
 test_result() {
-    local r
     if [ "${parse_state}" = "${state_ready}" -a -n "${command}" ]; then
         if [ -z "${shtest_clear}" ]; then
             [ -z "${auxcommand}" -a -n "${shtest_showexec}" ] && \
                 report "Executing ${command}"
-            runcommand > "${result}"
+            if [ -n "${auxcommand}" ]; then
+                runcommand
+            else
+                runcommand > "${result}"
+            fi
             if [ -z "${auxcommand}" ]; then
                 process_result || {
                     test_failed=$(expr ${test_failed} + 1 )
@@ -242,7 +246,8 @@ test_result() {
                 }
                 if [ -z "${shtest_refill}" ]; then
                     case "${cmdexitcode}" in
-                        80)             exit 80 ;;
+                        80)             exit 0 ;;
+                        83)             exit 83 ;;
                         "${exitcode}")  : ;;
                         *)
                             test_unhandledexit=$( expr ${test_unhandledexit} + 1)

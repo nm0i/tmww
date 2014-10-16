@@ -1141,12 +1141,23 @@ aux_party_get_by_pcid() {
     grep -m 1 "^${result}" "${TMWW_SERVERPARTY}" | cut -f 2
 }
 
+aux_partyid_get_by_pcid() {
+    local result
+    egrep -m 1 "^$1" "${TMWW_SERVERDB}" | cut -f 10 | cut -f 1 -d ','
+}
+
 aux_party_get_by_char() {
     local result
     chname=$( sed_chars "$1" )
     result=$(egrep -m 1 "^${field}${field}${chname}${tabchar}" "${TMWW_SERVERDB}" | cut -f 10 | cut -f 1 -d ',' )
     [ -z "${result}" -o "${result}" = "0" ] && return
     grep -m 1 "^${result}" "${TMWW_SERVERPARTY}" | cut -f 2
+}
+
+aux_partyid_get_by_char() {
+    local result
+    chname=$( sed_chars "$1" )
+    egrep -m 1 "^${field}${field}${chname}${tabchar}" "${TMWW_SERVERDB}" | cut -f 10 | cut -f 1 -d ','
 }
 
 aux_party_get_by_partyid() {
@@ -1234,37 +1245,37 @@ aux_party_show_ids_by_party() {
 }
 
 aux_party_show_chars_by_pcid() {
-    local party
-    party=$(aux_party_get_by_pcid "$1")
-    [ -z "${party}" ] && return
-    ${AWK} ${AWKPARAMS} -v patt="${party}" -F '\t' -- '
+    local partyid
+    partyid=$(aux_partyid_get_by_pcid "$1")
+    [ -z "${partyid}" ] && return
+    ${AWK} ${AWKPARAMS} -v patt="${partyid}" -F '\t' -- '
         $2==patt { for (i=4;i<NF;i+=2) print $(i+1) ; exit }
     ' "${TMWW_SERVERPARTY}"
 }
 
 aux_party_show_ids_by_pcid() {
-    local party
-    party=$(aux_party_get_by_pcid "$1")
-    [ -z "${party}" ] && return
-    ${AWK} ${AWKPARAMS} -v patt="${party}" -F '\t' -- '
+    local partyid
+    partyid=$(aux_partyid_get_by_pcid "$1")
+    [ -z "${partyid}" ] && return
+    ${AWK} ${AWKPARAMS} -v patt="${partyid}" -F '\t' -- '
         $2==patt { for (i=4;i<NF;i+=2) { split($i,id,","); print id[1],$(i+1) } ; exit }
     ' "${TMWW_SERVERPARTY}"
 }
 
 aux_party_show_chars_by_char() {
-    local party
-    party=$(aux_party_get_by_char "$1")
-    [ -z "${party}" ] && return
-    ${AWK} ${AWKPARAMS} -v patt="${party}" -F '\t' -- '
+    local partyid
+    partyid=$(aux_partyid_get_by_char "$1")
+    [ -z "${partyid}" ] && return
+    ${AWK} ${AWKPARAMS} -v patt="${partyid}" -F '\t' -- '
         $2==patt { for (i=4;i<NF;i+=2) print $(i+1) ; exit }
     ' "${TMWW_SERVERPARTY}"
 }
 
 aux_party_show_ids_by_char() {
-    local party
-    party=$(aux_party_get_by_char "$1")
+    local partyid
+    partyid=$(aux_partyid_get_by_char "$1")
     [ -z "${party}" ] && return
-    ${AWK} ${AWKPARAMS} -v patt="${party}" -F '\t' -- '
+    ${AWK} ${AWKPARAMS} -v patt="${partyid}" -F '\t' -- '
         $2==patt { for (i=4;i<NF;i+=2) { split($i,id,","); print id[1],$(i+1) } ; exit }
     ' "${TMWW_SERVERPARTY}"
 }

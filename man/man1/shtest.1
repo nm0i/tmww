@@ -119,7 +119,7 @@ number of tests passed before fail
 .TP
 .B
 80
-normal interrupt from test
+normal interrupt from test (brick with 0 exit code)
 .TP
 .B
 81
@@ -130,8 +130,8 @@ unhandled exit code from test
 \fBshtest\fP error (mkdir faults and so on)
 .TP
 .B
->82
-user defined error
+83
+abnormal interrupt from test (brick with 83 exit code)
 .PP
 .SH AUTHORS
 willee <v4r@trioptimum.com>, 2014

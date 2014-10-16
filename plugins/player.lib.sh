@@ -179,8 +179,10 @@ aux_player_get_by_char() {
     if [ -z "$result" ]; then
         check_string_chars "$1" "*[!a-zA-Z0-9-_/\\\!\@\#\$\%^\&\*\(\)\,\.\'\ ]*" \
             "Disallowed characters at charname" || return 1
-        # escape backslash for awk + for json
-        chname=$(printf "%s" "$1" | sed ${ESED} 's/\\/\\\\\\\\/g;s/([.*+!@#$%^/?[{|()])/\\\1/g')
+        # triple escaping: awk param, regex pattern, json value
+        # like sed-chars but without "/" (skipping gawk warning)
+        chname=$( printf "%s" "$1" |
+            sed ${ESED} 's/\\/\\\\\\\\\\\\\\\\/g;s/([.*"+!@#$%^?[{|()])/\\\1/g'; )
         ${AWK} ${AWKPARAMS} -v chname="${chname}" -- '
         $0 ~ "\"alts\":\\[[^]]*\"" chname "\"" {
             sub("^.*\"player\":\"",""); sub("\".*$","")

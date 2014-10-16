@@ -58,10 +58,10 @@ Exit status
 
 0       normal exit
 >0      number of tests passed before fail
-80      normal interrupt from test
+80      normal interrupt from test (brick with 0 exit code)
 81      unhandled exit code from test
 82      shtest error (mkdir faults and so on)
->82     user defined error
+83      abnormal interrupt from test (brick with 83 exit code)
 
 Authors
 -------
