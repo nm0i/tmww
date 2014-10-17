@@ -104,7 +104,7 @@ aux_player_show_parties_by_id() {
 }
 
 aux_player_show_chars_by_player() {
-    aux_player_query_chardb "$1"
+    aux_player_query_chardb "$1" | sed 's/.\{8\}//'
     aux_player_query_alts "$1"
 }
 
@@ -129,7 +129,7 @@ aux_player_show_parties_by_player() {
 
 aux_player_query_chardb() {
     aux_player_ids "$1" | while read line; do
-        aux_char_show_chars_by_id "${line}"
+        aux_char_show_ids_by_id "${line}"
     done
 }
 
