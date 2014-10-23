@@ -24,12 +24,12 @@ interval_month_limit=60
 # interval in minutes; default is 120
 internal_activity_idle_limit=100
 
-TMWW_PATTERNLOCK="${TMWW_PRIVTMP}/tmww-pattern.${TMWW_INSTANCE}-${servername}"
 set_pattern_lock() {
-        check_lock "pattern.${TMWW_INSTANCE}" "${TMWW_PATTERNLOCK}" 35
+    activity_patt_file=$( mktemp --tmpdir="${TMWW_PRIVTMP}" )
+    trap_add activity "rm -rf '${activity_patt_file}' >/dev/null 2>&1" 
 }
 unset_pattern_lock() {
-    rmdir "${TMWW_PATTERNLOCK}" 2>/dev/null
+    rm -rf "${activity_patt_file}" >/dev/null 2>&1
 }
 
 #

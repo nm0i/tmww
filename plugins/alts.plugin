@@ -28,54 +28,49 @@ alts -- alts lookup facility. Set of commands to handle
     unknown account ids are listed in "alts" field.  Every other known char is
     referenced over "accounts" field. Fields other than this are not fixed.
 
-    char/party del isn't implemented
-
-Command line options:
-    subcommand: char -- character database handler
-        add id ID char CHAR -- add id/char pair to db; write conflicts to log
-        resolve id ID char CHAR -- same as add + resolve all matched alts in playerdb into accounts
-        grep [ chars | ids ] REGEXP -- search known chars, output chars/chars with ids
-        fuzzy [ chars | ids ] PATTERN -- case-insensitive levenshtein distance 1 search
-        get [ [ id ] by char CHAR ] -- get CHAR acc_id
-        show [ chars | ids | parties ] by id ID -- get all known chars on acc_id
-        show [ chars | ids | parties ] by char CHAR -- get all known chars on same account as CHAR
-        dig REGEXP -- grep + show ids by ids from grep matches
-        sanitize -- remove older duplicate entries; write conflicts to log
-        merge FILENAME -- put FILENAME into db; write conflicts to log
-    subcommand: party -- party database handler
-        add party PARTY char CHAR
-        get [ by char ] CHAR -- get char's party name
-        show [ ids | chars | players ] by { party PARTY | char CHAR } -- party members lookup
-        { grep | fuzzy } PATTERN -- grep/approximate grep party name
-        sanitize -- show duplicates in partydb
-        merge FILENAME -- put FILENAME into db; conflicts pushed to db and listed in merge log
-    subcommand: player -- players database handler
-        ref -- field types quick reference
-        create PLAYER
-        remove PLAYER
-        rename PLAYER to PLAYER
-        add PLAYER FIELD value VALUE
-        add PLAYER FIELD element VALUE -- adding alts will automatically resolve charname into account
-        resolve PLAYER -- resolve all player alts into accounts
-        del PLAYER FIELD
-        del PLAYER FIELD element VALUE
-        get { CHAR | by { char CHAR | id ACCID } } -- dereference player entry
-        ids PLAYER -- print all known associated account IDs
-        show [ ids | chars | parties ] by { char CHAR | id CHAR | player PLAYER } -- lookup
-        list with FIELD
-        list with { FIELD [ not ] as VALUE | VALUE [ not ] in FIELD }+
-        dump PLAYER -- dump JSONline record of PLAYER; tmww player dump veryape
-        record NUMBER -- access players db record by it's order number
-        append STRING -- NOT SAFE append JSON player record of same format as with dump operation to end of dbplayers
-            you should try sanitize operation if you not sure if there are duplicate entries or fields
-        keys PLAYER -- tmww player keys veryape
-        field PLAYER FIELD [FIELD]... -- tmww player field veryape name aka
-        search STRING -- simple search in all fields
-        sanitize -- remove keys with 0 length - empty arrays and hashes with null value
-            resolve alts into accounts, report duplicate accounts and alts
-        lregen -- regenerate shortened playerdb version if limiteddb is in use
-        FIXME merge FILENAME -- simple merge player records + sanitize
-        FIXME forcemerge FILENAME -- replace duplicated records with new ones + sanitize
+subcommand: char -- character database handler
+    add id ID char CHAR -- add id/char pair to db; write conflicts to log
+    resolve id ID char CHAR -- same as add + resolve all matched alts in playerdb into accounts
+    grep [ chars | ids ] REGEXP -- search known chars, output chars/chars with ids
+    fuzzy [ chars | ids ] PATTERN -- case-insensitive levenshtein distance 1 search
+    get [ [ id ] by char CHAR ] -- get CHAR acc_id
+    show [ chars | ids | parties ] by id ID -- get all known chars on acc_id
+    show [ chars | ids | parties ] by char CHAR -- get all known chars on same account as CHAR
+    dig REGEXP -- grep + show ids by ids from grep matches
+    sanitize -- remove older duplicate entries; write conflicts to log
+    merge FILENAME -- put FILENAME into db; write conflicts to log
+subcommand: party -- party database handler
+    add party PARTY char CHAR
+    get [ by char ] CHAR -- get char's party name
+    show [ ids | chars | players ] by { party PARTY | char CHAR } -- party members lookup
+    { grep | fuzzy } PATTERN -- grep/approximate grep party name
+    sanitize -- show duplicates in partydb
+    merge FILENAME -- put FILENAME into db; conflicts pushed to db and listed in merge log
+subcommand: player -- players database handler
+    ref -- field types quick reference
+    create PLAYER
+    remove PLAYER
+    rename PLAYER to PLAYER
+    add PLAYER FIELD value VALUE
+    add PLAYER FIELD element VALUE -- adding alts will automatically resolve charname into account
+    resolve PLAYER -- resolve all player alts into accounts
+    del PLAYER FIELD
+    del PLAYER FIELD element VALUE
+    get { CHAR | by { char CHAR | id ACCID } } -- dereference player entry
+    ids PLAYER -- print all known associated account IDs
+    show [ ids | chars | parties ] by { char CHAR | id CHAR | player PLAYER } -- lookup
+    list with FIELD
+    list with { FIELD [ not ] as VALUE | VALUE [ not ] in FIELD }+
+    dump PLAYER -- dump JSONline record of PLAYER; tmww player dump veryape
+    record NUMBER -- access players db record by it's order number
+    append STRING -- NOT SAFE append JSON player record of same format as with dump operation to end of dbplayers
+        you should try sanitize operation if you not sure if there are duplicate entries or fields
+    keys PLAYER -- tmww player keys veryape
+    field PLAYER FIELD [FIELD]... -- tmww player field veryape name aka
+    search STRING -- simple search in all fields
+    sanitize -- remove keys with 0 length - empty arrays and hashes with null value
+        resolve alts into accounts, report duplicate accounts and alts
+    lregen -- regenerate shortened playerdb version if limiteddb is in use
 EOF
 }
 

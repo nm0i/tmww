@@ -1,0 +1,637 @@
+#!/bin/sh
+# tmww plugin: maplog
+# whatis: maplog.plugin - awk wrapper for parsing map log
+# conflicts: -
+# depends: -
+# recommends: -
+
+# this file is part of tmww - the mana world watcher
+# willee, 2012-2014
+# GPL v3
+
+# check if not run as plugin
+if [ "$TMWW_PLUGINS" != "yes" ] ; then
+    echo >&2 "This script is tmww plugin and rely heavily on it's facilities."
+    exit 1
+fi
+
+help_maplog() {
+    cat << EOF
+maplog.plugin - awk wrapper for parsing map log
+
+maplog arguments: OPTIONS [ LOG ]*
+Time interval options:
+    [ -f "YYYY-MM-[DD[ HH:MM[:SS]]]" ] -- from
+    [ -t "YYYY-MM-[DD[ HH:MM[:SS]]]" ] -- to
+    [ -d N ] -- last N days
+    [ -m N ] -- last N months
+PCIDs query generation:
+    [ -p PLAYER ]* -- include chars by PLAYER
+    [ -a ACCID ]* -- include chars by ACCID
+    [ -c CHAR ]* -- include char
+    [ -C CHAR ]* -- include chars by CHAR (same account)
+    [ -x CHAR ]* -- exclude CHAR
+    [ -X CHAR ]* -- exclude chars on account by CHAR
+    [ -w PCID ]* -- include PCID
+    [ -W PCID ]* -- exclude PCID
+Item query:
+    [ -i NAME ] -- include item by name
+    [ -y ID ] -- include item by id
+    [ -I GLOB ] -- include itemsets by glob
+Configured query:
+    [ -u SECTION ] -- use expression from section SECTION in config
+        shipped filters are: sell, buy, frisk
+    [ -q EXPR ] -- additional condition to match log record
+    [ -Q EXPR ] -- expression executed after PCIDs and all other criterias matched
+Custom search:
+    [ -n INT ] -- grep generated PCIDs on field number INT
+    [ -N INT ] -- grep generated item IDs on field number INT
+    [ -z ] -- all PCIDs conversion (terribly slow)
+    [ -Z ] -- all item IDs conversion (slow)
+    [ -r ] -- prefix pcids with "PC"
+    [ -R ] -- no readable PCIDs/item IDs conversion
+    [ -o OPERATION ] -- shortcut to query filter '$5=="OPERATION"'
+    [ -b EXPR ] -- BEGIN awk expressions
+    [ -q EXPR ] -- additional condition to match log record
+    [ -Q EXPR ] -- expression executed after PCIDs and all other criterias matched
+Logs:
+    logs -- custom location gzipped logs; default filename mask is "map.log.*.gz"
+        with default location as $SERVERPATH/world/map/log
+EOF
+}
+
+[ "$TMWW_PLUGINHELP" = "yes" ] && help_maplog && return 0
+
+# no reason to use maplog parser without alts/item resolution
+requireplugin server.lib.sh || return 1
+requireplugin db.lib.sh || return 1
+
+check_dir "${TMWW_PRIVTMP}"
+
+set_maplog_lock() {
+    maplog_patt_file=$( mktemp --tmpdir="${TMWW_PRIVTMP}" )
+    trap_add maplog "rm -rf '${maplog_patt_file}' >/dev/null 2>&1" 
+}
+
+unset_maplog_lock() {
+    rm -rf "${maplog_patt_file}" >/dev/null 2>&1
+}
+
+TMWW_MAPLOGSHIFT="${TMWW_MAPLOGSHIFT:-1024}"
+
+# code sketch
+return
+
+#
+# aux
+#
+#
+
+# YYYY-MM-[DD[ HH:MM[:SS]]]
+aux_maplog_interval() {
+    local valid no_from_day no_to_day
+    if [ -n "${interval_from}" ]; then
+        no_from_day=''; no_to_day=''; from_epoch=''; to_epoch=''
+        valid=$( printf "%s" "${interval_from}" |
+            sed ${ESED} -n '/^[0-9]{4}-[0-9]{2}-([0-9]{2} +([0-9]{2}:[0-9]{2}(:[0-9]{2})?)?)?$/p' )
+        [ -z "${valid}" ] && { error_date; return 1; }
+        [ -z "$( get_dash 3 $( get_element 1 ${interval_from} ) )" ] && no_from_day=1
+
+        if [ -n "${interval_to}" ]; then
+            valid=$( printf "%s" "${interval_to}" |
+                sed ${ESED} -n '/^[0-9]{4}-[0-9]{2}-([0-9]{2} +([0-9]{2}:[0-9]{2}(:[0-9]{2})?)?)?$/p' )
+            [ -z "${valid}" ] && { error_date; return 1; }
+            [ -z "$( get_dash 3 $( get_element 1 ${interval_to} ) )" ] && no_to_day=1
+        else
+            inverval_to=$( date -u '+%Y-%m-%d %H:%M:%S' )
+        fi
+
+        case "${platform}" in
+            GNU)
+                from_epoch=$( date --date "${interval_from}${no_from_day:+-01}" -u +%s 2>/dev/null )
+                [ -z "${from_epoch}" ] && { error_date; return 1; }
+                to_epoch=$( date --date "${interval_to}${no_to_day:+-01}" -u +%s 2>/dev/null )
+                [ -z "${to_epoch}" ] && { error_date; return 1; }
+                ;;
+        esac
+    elif [ -n "${interval_day}" ]; then
+        check_string_chars "${interval_day}" "*![0-9]*" "Incorrect days number" || return 1
+        to_epoch=$( date -u +%s )
+        inverval_to=$( date -u '+%Y-%m-%d %H:%M:%S' )
+        case "${platform}" in
+            GNU)
+                from_epoch=$( date "${interval_day} days ago" -u +%s 2>/dev/null )
+                [ -z "${from_epoch}" ] && { error_date; return 1; }
+                inverval_from=$( date "@${from_epoch}" -u '+%Y-%m-%d %H:%M:%S' )
+                ;;
+        esac
+    elif [ -n "${interval_month}" ]; then
+        check_string_chars "${interval_month}" "*![0-9]*" "Incorrect days number" || return 1
+        to_epoch=$( date -u +%s )
+        inverval_to=$( date -u '+%Y-%m-%d %H:%M:%S' )
+        case "${platform}" in
+            GNU)
+                from_epoch=$( date "${interval_month} days ago" -u +%s 2>/dev/null )
+                [ -z "${from_epoch}" ] && { error_date; return 1; }
+                inverval_from=$( date "@${from_epoch}" -u '+%Y-%m-%d %H:%M:%S' )
+                ;;
+        esac
+    fi
+
+    if [ 0 -gt $( expr ${to_epoch} - ${from_epoch} ) ]; then error_date; return 1; fi
+
+    # forming lognames shift
+    from_shift=$( expr ${from_epoch} / ${TMWW_MAPLOGSHIFT} )
+    to_shift=$( expr ${to_epoch} / ${TMWW_MAPLOGSHIFT} )
+}
+
+#
+# prepare pcids
+#
+#
+
+aux_maplog_char_include() {
+    [ -z "${res}" ] && return
+    ml_pcids=$( printf "%s\n%s\n" "${ml_pcids}" "${res}" | ${AWK} -- '
+        { if (!($1 in a)) a[$1] = $0 }
+        END { for (i in a) print $0 }
+    ')
+}
+
+aux_maplog_char_exclude() {
+    [ -z "${res}" ] && return
+    ml_pcids=$( printf "%s\n-\n%s\n" "${ml_pcids}" "${res}" | ${AWK} -- '
+        /^-/ {sep=1}
+        {
+            if (sep)
+                if (!($1 in a)) a[$1] = $0
+            else
+                if ($1 in a) a[$1] = ""
+        }
+        END { for (i in a) print $0 }
+    ')
+}
+
+aux_maplog_char_prepare() {
+    ml_pcids=$( printf "%s" "${ml_pcids}" | sort -u | sed 's/\\/\\\\/g' | tr '\n' '|' )
+    ml_pcids="(${ml_pcids%|})"
+    [ "${ml_pcids}" = "()" ] && ml_pcids=''
+}
+
+#
+# prepare itemids
+#
+#
+
+aux_maplog_itemset_include() {
+    local patt iset i
+    res=''
+    # expand glob
+    for iset in ${TMWW_UTILPATH}/${OPTARG}*.itemset ; do
+        patt=''
+        case "${iset}" in
+            *.id.itemset)
+                while read i; do
+                    i=$( aux_item_get_idname_by_id "$i" )
+                    patt="${patt:+${patt}${nl}}$i"
+                done < "${iset}"
+                ;;
+            *.name.itemset)
+                while read i; do
+                    check_string_chars "$i" "*[!a-zA-Z]*" "Disallowed characters in NAME $i"
+                    patt="${patt:+${patt}|}$i"
+                done < "${iset}"
+                if [ -n "${patt}" ]; then
+                    # converting names pattern to ids pattern
+                    patt=$( egrep "^${csv}(${patt})," ${itemfiles} | cut -f 1,2 -d ',' )
+                fi
+                ;;
+        esac
+        [ -z "${patt}" ] || res="${res:+${res}${nl}}${patt}"
+    done
+    aux_maplog_item_include
+}
+
+aux_maplog_item_include() {
+    [ -z "${res}" ] && return
+    ml_itemids=$( printf "%s\n%s\n" "${ml_itemids}" "${res}" )
+}
+
+aux_maplog_item_prepare() {
+    ml_itemids=$( printf "%s\n" "${ml_itemids}" | ${AWK} -- '
+        { if (!($1 in a)) a[$1] = $0 }
+        END { for (i in a) print $0 }
+    ' | sort -u | tr '\n' '|' )
+    ml_itemids="(${ml_itemids%|})"
+    [ "${ml_itemids}" = "()" ] && ml_itemids=''
+}
+
+#
+# log parsers
+#
+#
+
+aux_parser_code() {
+    ${AWK} ${AWKPARAMS} -v fname="${fname}" -v ml_itemids="${ml_itemids}" \
+        -v ml_pcids="${ml_pcids}" -v interval_from="${inverval_from}" \
+        -v interval_to="${interval_to}" -v pcids_prefix="${pcids_prefix}" \
+        -v pcids_field="${pcids_fields}" -v itemids_field="${itemids_field}" \
+        -v filter_condition="${filter_condition:+1}" -v filter_code="${filter_code:+1}" \
+        -v filter_operation="${filter_operation}" -v convert_ids="${convert_ids}" \
+        -- "
+    function is_empty(checked_array,    checked_index) {
+        for (checked_index in checked_array) return 0; return 1
+    }
+    function ignore_by_time(    time) {
+        # not clearing fraction part - valid to compare numbers
+        time = \$1 \$2; gsub(\"[: -]\",\"\",time)
+        if ( time < interval_from || time > interval_to ) return 1
+        return 0
+    }
+    function ignore_by_pcid(    tmp) {
+        if (pcids_prefix) {
+            tmp=\$pcids_field; sub(\"^PC\",\"\",tmp)
+            if (tmp in pcids) return 0
+        }
+        else {
+            if (\$pcids_field in pcids) return 0
+        }
+        return 1
+    }
+    function ignore_by_itemid() {
+        if (\$itemids_field in itemids) return 0
+        return 1
+    }
+    function convert_pcids(pcidf,pcidp    tmp) {
+        if (pcidp)
+            tmp=\$pcidf; sub(\"^PC\",\"\",tmp)
+        if (\$pcidf in pcids)
+            \$pcidf = pcids[\$pcidf] \"(\" pcids_id[\$pcidf] \")\"
+        else if (convert_all_pcids)
+            \$pcidf = all_pcids[\$pcidf] \"(\" all_pcids_id[\$pcidf] \")\"
+    }
+    function convert_itemids(itemidf) {
+        if (\$itemidf in itemids)
+            \$itemidf = itemids[\$itemidf] \"(\" \$itemidf \")\"
+        else if (convert_all_itemids)
+            \$itemidf = all_itemids[\$itemidf] \"(\" \$itemidf \")\"
+    }
+    function print_maplog(    tmp) {
+        if (!convert_ids) { print; return; }
+        convert_pcids(pcids_field,pcids_prefix)
+        convert_itemids(itemids_field)
+        print
+    }
+    function prepare_vars() {
+        # prepare time interval variables
+        padzero = \"00000000\"
+        gsub(\"[: -]\",\"\",interval_from)
+        interval_from = interval_from substr(padzero,1,14-length(interval_from))
+        gsub(\"[: -]\",\"\",interval_to)
+        interval_to = interval_to substr(padzero,1,14-length(interval_to))
+        
+        # prepare pcids translation arrays
+        split(ml_pcids,tpcids,\"\\n\")
+        for (i in tpcids) {
+            split(tpcids[i],pcid,\"\\t\"); sub(\",.*\",\"\",pcid[1])
+            pcids[pcid[0]]=pcid[2]
+            pcids_id[pcid[0]]=pcid[1]
+        }
+        if (convert_all_pcids) {
+            while (getline cached_pcid < cache_pcids) {
+                    split(cached_pcid,pcid,\"\\t\"); sub(\",.*\",\"\",pcid[1])
+                    all_pcids[pcid[0]]=pcid[2]
+                    all_pcids_id[pcid[0]]=pcid[1]
+                }
+            }
+        }
+
+        # prepare itemids translation array
+        split(ml_itemids,titemids,\"\\n\")
+        for (i in titemids) {
+            split(titemids[i],itemid,\",\"); sub(\" *\",\"\",itemid[1])
+            itemids[itemid[0]]=itemid[1]
+        }
+        if (convert_all_pcids) {
+            while (getline cached_itemid < cache_itemids) {
+                    split(cached_itemid,itemid,\",\"); sub(\" *\",\"\",itemid[1])
+                    all_itemids[itemid[0]]=itemid[1]
+                }
+            }
+        }
+    }
+    ${section_code}
+    "
+}
+
+section_custom='
+    BEGIN { prepare_vars() }
+    {
+        # time criterias are always passed
+        if (ignore_by_time()) next
+        if (ml_pcids && ignore_by_pcid()) next
+        if (ml_itemids && ignore_by_itemid()) next
+        if (filter_operation && \$5 != toupper(filter_operation)) next
+        if (filter_condition) {
+            if (${filter_condition}) {
+                if (filter_code) {
+                    ${filter_code}
+                } else print_maplog
+            }
+        } elif (filter_code) {
+            ${filter_code}
+        }
+    }
+'
+
+# showing only items bought
+# not sure if PICKUP between trades cannot be regular pick up
+section_buy='
+    BEGIN { prepare_vars(); gp=9; flag=0; buffer=\"\"; matched_item = 0 }
+    flag == 1 {
+        checkid = \$3; sub(\"^PC\",\"\",checkid)
+        if ((checkid in pcids) && ((\$5 == \"TRADEOK\") || (\$5 == \"TRADECANCEL\")) {
+            # dont print anything if trade was canceled
+            # if (\$5 == \"TRADEOK\") {
+                if ((!ml_itemids) || matched_item) printf \"%s\" buffer
+            # }
+            buffer=\"\"; flag = 0; matched_item = 0; next
+        }
+        if ((checkid == seller ) && (\$5 == \"PICKUP\")) {
+            if (ml_itemids && (\$6 in itemids) ) matched_item = 1
+            convert_itemids(6)
+            convert_pcids(3,1)
+            buffer = buffer \$0 \"\\n\"
+        next;
+    }
+    {
+        if (ignore_by_time()) next
+        if (ml_pcids && ignore_by_pcid()) next
+        if (\$5 != \"TRADECOMMIT\") next
+        
+        seller = \$3; sub(\"^PC\",\"\",seller)
+        convert_pcids(3,1); convert_pcids(7,0)
+        buffer = buffer \$0 \"\\n\"
+        flag=1
+    }
+'
+
+# showing only items sold
+# not sure if PICKUP between trades cannot be regular pick up
+section_sell='
+    BEGIN { prepare_vars(); gp=11; flag=0; buffer=\"\"; matched_item = 0 }
+    flag == 1 {
+        checkid = \$3; sub(\"^PC\",\"\",checkid)
+        if ((checkid in pcids) && ((\$5 == \"TRADEOK\") || (\$5 == \"TRADECANCEL\")) {
+            # dont print anything if trade was canceled
+            # if (\$5 == \"TRADEOK\") {
+                if ((!ml_itemids) || matched_item) printf \"%s\" buffer
+            # }
+            buffer=\"\"; flag = 0; matched_item = 0; next
+        }
+        if ((checkid == \"PC\" buyer ) && (\$5 == \"PICKUP\")) {
+            if (ml_itemids && (\$6 in itemids) ) matched_item = 1
+            convert_itemids(6)
+            convert_pcids(3,1)
+            buffer = buffer \$0 \"\\n\"
+        next;
+    }
+    {
+        if (ignore_by_time()) next
+        if (ml_pcids && ignore_by_pcid()) next
+        if (\$5 != \"TRADECOMMIT\") next
+        
+        buyer = \$7
+        convert_pcids(3,1); convert_pcids(7,0)
+        buffer = buffer \$0 \"\\n\"
+        flag=1
+    }
+'
+
+# buy/sell + pickup ops
+# not sure if PICKUP between trades cannot be regular pick up
+section_examine='
+    BEGIN { prepare_vars(); flag=0; buffer=\"\"; matched_item = 0 }
+    flag == 1 {
+        checkid = \$3; sub(\"^PC\",\"\",checkid)
+        if ((checkid in pcids) && ((\$5 == \"TRADEOK\") || (\$5 == \"TRADECANCEL\")) {
+            # dont print anything if trade was canceled
+            # if (\$5 == \"TRADEOK\") {
+                if ((!ml_itemids) || matched_item) printf \"%s\" buffer
+            # }
+            buffer=\"\"; flag = 0; matched_item = 0; next
+        }
+        if (((checkid == buyer) || (checkid == seller)) && (\$5 == \"PICKUP\")) {
+            if (ml_itemids && (\$6 in itemids) ) matched_item = 1
+            convert_itemids(6)
+            convert_pcids(3,1)
+            buffer = buffer \$0 \"\\n\"
+        next;
+    }
+    {
+        if (ignore_by_time()) next
+        if (ml_pcids && ignore_by_pcid()) next
+        if (\$5 = \"TRADECOMMIT\") {
+            seller = \$3; sub(\"^PC\",\"\",seller)
+            buyer = \$7
+            convert_pcids(3,1); convert_pcids(7,0)
+            buffer = buffer \$0 \"\\n\"
+            flag=1
+        } else if (\$5 = \"PICKUP\") {
+            convert_pcids(3,1)
+            convert_itemids(6)
+            print
+        }
+    }
+'
+
+aux_parser() {
+    local fname
+    fname=$( printf "%s" "$1" | sed 's/\\/\\\\/g' )
+    case "$1" in
+        *.gz)
+            zcat "$1" | aux_parser_code
+            ;;
+        *)
+            cat "$1" | aux_parser_code
+            ;;
+    esac
+}
+
+aux_default_logs_parser() {
+    while [ "${from_shift}" -le "${to_shift}" ]; do
+        [ -f "${TMWW_MAPLOGPATH}/map.log.${from_shift}.gz" ] || continue
+        aux_parser "${TMWW_MAPLOGPATH}/map.log.${from_shift}.gz"
+        from_shift=$( expr ${from_shift} + 1 )
+    done
+}
+
+aux_custom_logs_parser() {
+    for file in ${log_files}; do
+        [ -f "${file}" ] || continue
+        aux_parser "${file}"
+    done
+}
+
+#
+# options parser
+#
+#
+
+ml_pcids=''
+ml_itemids=''
+
+interval_method=''
+interval_day=''
+interval_month=''
+interval_from=''
+interval_to=''
+
+filter_section=''       # -u
+filter_begin=''         # -b
+filter_operation=''     # -o
+filter_condition=''     # -q
+filter_code=''          # -Q
+
+pcids_field=''          # -n
+itemids_field=''        # -N
+pcids_prefix=''         # -r
+pcids_files=''          # -e
+convert_ids=''          # -R
+convert_all_pcids=''    # -z
+convert_all_itemids=''  # -Z
+
+log_files=''
+
+set_maplog_lock
+
+OPTIND=1
+while ${GETOPTS} f:t:d:m:p:a:c:C:x:X:w:W:e:i:I:u:q:Q:n:N:rRo:b:zZ opt ; do
+    case "${opt}" in
+
+        # interval options
+
+        f)  interval_from="$OPTARG"
+            [ -z "${interval_day}" -a -z "${interval_month}" ] || \
+                { error_params "Options conflict. Aborting"; return 1; }
+            ;;
+        t)  interval_to="$OPTARG"
+            [ -z "${interval_from}" ] && \
+                { error_params "No -f argument before -t. Aborting."; return 1; }
+            ;;
+        d)  interval_day="$OPTARG"
+            [ -z "${interval_from}" -a -z "${interval_month}" ] || \
+                { error_params "Options conflict. Aborting"; return 1; }
+            check_string_chars "${interval_day}" "*[!0-9]*" \
+                "Incorrect days number. Aborting." || return 1
+            ;;
+        m)  interval_month="$OPTARG"
+            [ -z "${interval_from}" -a -z "${interval_day}" ] || \
+                { error_params "Options conflict. Aborting"; return 1; }
+            check_string_chars "${interval_month}" "*[!0-9]*" \
+                "Incorrect months number. Aborting." || return 1
+            ;;
+
+        # PCIDS pattern forming options
+
+        a)  res=$( aux_char_show_pcids_by_id "${OPTARG}" )
+            aux_maplog_char_include
+            ;;
+        c)  res=$( aux_char_get_idname_by_char "${OPTARG}" )
+            aux_maplog_char_include
+            ;;
+        C)
+            res=$( aux_char_show_pcids_by_char "${OPTARG}" )
+            aux_maplog_char_include
+            ;;
+        p)
+            res=$( aux_player_show_pcids_by_char "${OPTARG}" )
+            aux_maplog_char_include
+            ;;
+        x)  res="${OPTARG}"
+            aux_maplog_char_exclude
+            ;;
+        X)
+            res=$( aux_char_show_pcids_by_char "${OPTARG}" )
+            aux_maplog_char_exclude
+            ;;
+        w)
+            res=$( aux_char_get_idname_by_pcid "${OPTARG}" )
+            aux_maplog_char_include
+            ;;
+        W)
+            res=$( aux_char_show_pcids_by_pcid "${OPTARG}" )
+            aux_maplog_char_include
+            ;;
+
+        # item pattern forming options
+
+        i)  res=$( aux_item_get_idname_by_name "${OPTARG}" )
+            aux_maplog_include_item
+            ;;
+        I)  aux_maplog_include_itemset
+            ;;
+
+        # query options
+
+        u)  filter_sectin="${OPTARG}" ;;
+        q)  filter_condition="${OPTARG}" ;;
+        Q)  filter_code="${OPTARG}" ;;
+        n)  pcids_field="${OPTARG}" ;;
+        N)  itemids_field="${OPTARG}" ;;
+        r)  pcids_prefix=1 ;;
+        R)  convert_ids=1 ;;
+        o)  filter_operation="${OPTARG}" ;;
+        b)  filter_begin="${OPTARG}" ;;
+        z)  convert_all_pcids=1 ;;
+        Z)  convert_all_itemids=1 ;;
+
+        *)  error_incorrect; return 1
+            ;;
+    esac
+done
+
+shift $(expr $OPTIND - 1)
+log_files="$@"
+
+if [ -n "${convert_all_pcids}" -a ! -f "${TMWW_PRIVTMP}/cache_pcids_${servername}" ]; then
+    grep -v '^//' "${SERVERDB}" | cut -f 1-3 > "${TMWW_PRIVTMP}/cache_pcids_${servername}"
+fi
+
+if [ -n "${convert_all_itemids}" -a ! -f "${TMWW_PRIVTMP}/cache_itemids_${servername}" ]; then
+    grep -v '^//' ${itemfiles} | cut -f 1,2 -d 1,2 > "${TMWW_PRIVTMP}/cache_itemids_${servername}"
+fi
+
+#
+# main
+#
+#
+
+if [ -n "${filter_section}" ]; then
+    case "${filter_section}" in
+        sell|buy|frisk|pickup)
+            eval filter_section=\" \$section_${filter_section} \"
+            eval section_code=\"${filter_section}\"
+            ;;
+        *)
+            process_section "${filter_section}"
+            [ -z "${configdata}" ] && { error "Maplog code from section ${filter_section} not found"; exit 1 ; }
+            eval section_code=\"${configdata}\"
+            ;;
+    esac
+else
+    eval section_code=\"${section_custom}\"
+fi
+
+# if no log files overridden on command line
+if [ -z "${log_files}" ]; then
+    aux_maplog_interval || return 1
+    aux_default_logs_parser
+else
+    aux_custom_logs_parser
+fi
+
+unset_maplog_lock
+
+return 0
+

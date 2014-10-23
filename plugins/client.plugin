@@ -64,10 +64,9 @@ func_client_chars() {
     check_dir "${TMWW_PRIVTMP}"
     set_pattern_lock
 
-    patternfile="${TMWW_PRIVTMP}/client.pattern"
-    : > "${patternfile}"
+    : > "${activity_patt_file}"
     printf "%s\n" "${chnames}" | while read line; do
-        printf "detected.*\"%s\"\n" "${line}" >> "${patternfile}"
+        printf "detected.*\"%s\"\n" "${line}" >> "${activity_patt_file}"
     done
 }
 
@@ -186,7 +185,7 @@ case "${client_subcommand}" in
         interval=$( printf "%s" "${interval}" | ${AWK} ${AWKPARAMS} -- '{for (i=NF;i>0;i--) printf "%s ",$i}')
         func_client_chars || return 1
         cd "${TMWW_VERSIONREPORT}/${servername}" && \
-            grep -f "${patternfile}" ${interval} 2>/dev/null | \
+            grep -f "${activity_patt_file}" ${interval} 2>/dev/null | \
             ${AWK} ${AWKPARAMS} -F '"' -- '{sub("\\.yml.*","",$1); print $1, $2 ", " $4 ", " $6}' | \
             tail -n "${client_lines_limit}"
         unset_pattern_lock
@@ -196,7 +195,7 @@ case "${client_subcommand}" in
         aux_form_interval || return 1
         func_client_chars || return 1
         cd "${TMWW_VERSIONREPORT}/${servername}" && \
-            grep -h -f "${patternfile}" ${interval} 2>/dev/null | \
+            grep -h -f "${activity_patt_file}" ${interval} 2>/dev/null | \
             cut -d '"' -f 6- | cut -d '"' -f -1 | sort | uniq -c | \
             sort -rn | head -n "${client_lines_limit}"
         unset_pattern_lock
@@ -213,20 +212,20 @@ case "${client_subcommand}" in
         aux_form_interval || return 1
         func_client_chars || return 1
         topresult=$(cd "${TMWW_VERSIONREPORT}/${servername}" && \
-            grep -h -f "${patternfile}" ${interval} 2>/dev/null | \
+            grep -h -f "${activity_patt_file}" ${interval} 2>/dev/null | \
             cut -d '"' -f 6- | cut -d '"' -f -1 | sort | uniq -c | \
             sort -rn | head -n 1 | sed ${ESED} 's/^ *[0-9][0-9]* *//')
         [ -z "${topresult}" ] && { unset_pattern_lock; return; }
-        patternfile="${TMWW_PRIVTMP}/client.pattern"
-        : > "${patternfile}"
+        activity_patt_file="${TMWW_PRIVTMP}/client.pattern"
+        : > "${activity_patt_file}"
         [ "${includechars}" = "yes" ] || {
             printf "%s\n" "${chnames}" | while read line; do
-                printf "\"%s\"\n" "${line}" >> "${patternfile}"
+                printf "\"%s\"\n" "${line}" >> "${activity_patt_file}"
             done
         }
         cd "${TMWW_VERSIONREPORT}/${servername}" && \
             grep -h "detected.*${topresult}" ${interval} 2>/dev/null | \
-            grep -v -f "${patternfile}" 2>/dev/null | \
+            grep -v -f "${activity_patt_file}" 2>/dev/null | \
             ${AWK} ${AWKPARAMS} -F '"' -- '{print $4,$6}' | sort | uniq -c | \
             sort -rn | head -n "${client_lines_limit}"
         unset_pattern_lock

@@ -278,7 +278,7 @@ func_char_grep() {
     fi
     [ -n "$2" ] && { error_toomuch; return 1; }
     [ -z "$1" ] && { error_missing; return 1; }
-    patt=$( sed_chars "$1" )
+    patt=$( sed_chars "$1" | sed 's/\\/\\\\/g' )
     if [ "$output_format" = "chars" ]; then
         cut -f 3 "${TMWW_SERVERDB}" | egrep -i -- "${patt}"
     elif [ "$output_format" = "ids" ]; then
@@ -333,6 +333,17 @@ aux_char_get_id_by_pcid() {
 aux_char_get_id_by_char() {
     chname=$( sed_chars "$1" )
     egrep -m 1 "^${field}${field}${chname}${tabchar}" "${TMWW_SERVERDB}" | cut -f 2 | cut -d ',' -f 1
+}
+
+# strictly internal
+aux_char_get_idname_by_pcid() {
+    grep -m 1 "^$1" "${TMWW_SERVERDB}" | cut -f 1-3
+}
+
+# strictly internal
+aux_char_get_idname_by_char() {
+    chname=$( sed_chars "$1" )
+    egrep -m 1 "^${field}${field}${chname}${tabchar}" "${TMWW_SERVERDB}" | cut -f 1-3
 }
 
 # require variable "res" with db/accs lines to print
@@ -1128,6 +1139,7 @@ func_party_dig() {
     local line
     [ -n "$2" ] && { error_toomuch; return 1; }
     [ -z "$1" ] && { error_missing; return 1; }
+    patt=$( sed_chars "$1" | sed 's/\\/\\\\/g' )
     ${AWK} ${AWKPARAMS} -v patt="$1" -F '\t' -- ' BEGIN{patt=tolower(patt)}
         { t=tolower($2); if (t~patt)
             for (i=4;i<NF;i+=2) { split($i,id,","); printf "%s %-24s -- %s\n",id[1],$(i+1),$2 } }
@@ -1234,7 +1246,7 @@ aux_party_show_ids_by_partyid() {
 
 aux_party_show_chars_by_party() {
     local chparty
-    chparty=$( sed_chars "$1" )
+    chparty=$( printf "%s" "$1" | sed 's/\\/\\\\/g' )
     ${AWK} ${AWKPARAMS} -v patt="${chparty}" -F '\t' -- '
         $2==patt { for (i=4;i<NF;i+=2) print $(i+1) ; exit }
     ' "${TMWW_SERVERPARTY}"
@@ -1242,7 +1254,7 @@ aux_party_show_chars_by_party() {
 
 aux_party_show_ids_by_party() {
     local chparty
-    chparty=$( sed_chars "$1" )
+    chparty=$( printf "%s" "$1" | sed 's/\\/\\\\/g' )
     ${AWK} ${AWKPARAMS} -v patt="${chparty}" -F '\t' -- '
         $2==patt { for (i=4;i<NF;i+=2) { split($i,id,","); print id[1],$(i+1) } ; exit }
     ' "${TMWW_SERVERPARTY}"

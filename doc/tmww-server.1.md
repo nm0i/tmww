@@ -115,7 +115,7 @@ terms
 operations  
 
     char { get | show | grep | agrep | fuzzy | dig | summary }
-    party { get | show | grep | agrep | fuzzy | summary }
+    party { get | show | grep | agrep | fuzzy }
     player { create | remove | rename | ref | add | resolve | del |
         get | show | list | dump | record | append | keys | field | search |
         sanitize | lregen | merge | forcemerge | summary }

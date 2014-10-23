@@ -37,6 +37,7 @@ n "detected czemu ... tt" - fix questions in names >> cannot reproduce
 - split md2man
 finished .............................. {{{
 v attach gnulib build-aux/gitlog-to-changelog as ChangeLog generator
+n single user deploy concerning distributed package/example files -- cancelled, added multiuser upgrade
 n separate public repo and private - restricted plugins; separated packaging too -- cancelled
                                         }}}
                                                                           }}}
@@ -116,9 +117,9 @@ n some output to access arrays (meaningful only for bot to wrap manaplus urls) >
                                         }}}
                                                                           }}}
 ---- tmww: plugin: server ----------------------------------------------- {{{
-c crash tests
 - add "char list with xx as yy", expr: [not] as|lt|gt|le|ge
 finished .............................. {{{
+v crash tests
 v db/server completion
 v process config sections for fields/aliases
 v char get inventory/storage by item/itemid
@@ -144,7 +145,6 @@ finished .............................. {{{
                                         }}}
                                                                           }}}
 ---- tmww: documentation ------------------------------------------------ {{{
-- single user deploy concerning distributed package/example files -- makefile
 - simple guide
 finished .............................. {{{
 v md2man fix singleline paragraph/blankline issue

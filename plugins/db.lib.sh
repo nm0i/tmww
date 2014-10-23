@@ -320,6 +320,18 @@ aux_item_get_name_by_id() {
     cat ${itemfiles} | grep -m 1 "^$1," | cut -f 2 -d ',' | tr -d ' '
 }
 
+# strictly internal
+aux_item_get_idname_by_name() {
+    check_string_chars "$1" "*[!a-zA-Z]*" "Disallowed characters in NAME" || return 1
+    cat ${itemfiles} | egrep -m 1 "^${csv}$1," | cut -f 1 -d ','
+}
+
+# strictly internal
+aux_item_get_idname_by_id() {
+    check_string_chars "$1" "*[!0-9]*" "Disallowed characters in ID" || return 1
+    cat ${itemfiles} | grep -m 1 "^$1," | cut -f 1,2 -d ','
+}
+
 aux_item_get_db_by_name() {
     [ -n "$2" ] && { error_toomuch; return 1; }
     [ -z "$1" ] && { error_missing; return 1; }

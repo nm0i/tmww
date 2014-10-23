@@ -203,7 +203,7 @@ _tmww_plugin_db() {
 #
 
 _tmww_plugin_db_item() {
-    _arguments \
+    _arguments -s \
         "${_tmww_args_db[@]}" \
         "*:: :_tmww_plugin_db_item_args"
 }
@@ -322,7 +322,7 @@ _tmww_plugin_db_item_mobs() {
 #
 
 _tmww_plugin_db_mob() {
-    _arguments \
+    _arguments -s \
         "${_tmww_args_db[@]}" \
         "*:: :_tmww_plugin_db_mob_args"
 }

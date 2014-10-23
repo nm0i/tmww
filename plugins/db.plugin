@@ -28,11 +28,25 @@ fi
 
 help_db() {
     cat << EOF
-FIXME
+db.plugin - item/mob db lookup (using tmwa-server-data)
+Options:
+    c       -- no fields captions
+    n       -- suppress append id/name to fields query
+    r       -- output raw tab-separated fields without pretty-printing
+    f EXPR  -- custom "cut -f" expression for db filter
+
+subcommand: item [ OPTS ]  
+    get { NAME | [ id | name | db | FIELD+ ] by { id ID | name NAME } }
+    show { names | ids | db | FIELD+ } by { ids ID+ | names NAME+ | re REGEXP | itemset ITEMSET }
+    mobs by { ids ID+ | names NAME+ | re REGEXP } -- show mobs dropping item/items
+subcommand: mob [ OPTS ]  
+    get { NAME | [ id | name | db | FIELD+ ] by { id ID | name NAME } }
+    show [ names | ids | db | FIELD+ ] by { ids ID+ | names NAME+ | re REGEXP }
+    drops { NAME | by { id ID | name NAME } } -- show mob drops
 EOF
 }
 
-[ "$TMWW_PLUGINHELP" = "yes" ] && help_server && return 0
+[ "$TMWW_PLUGINHELP" = "yes" ] && help_db && return 0
 
 requireplugin db.lib.sh || return 1
 

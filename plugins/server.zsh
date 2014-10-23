@@ -153,7 +153,7 @@ _tmww_plugin_server() {
 #
 
 _tmww_plugin_server_char() {
-    _arguments \
+    _arguments -s \
         "${_tmww_args_server[@]}" \
         "*:: :_tmww_plugin_server_char_args"
 }
@@ -167,6 +167,7 @@ _tmww_plugin_server_char_args() {
             'get:"{ CHAR | [ id ] by char CHAR } -- get account id of CHAR"'
             'show:"{ CHAR | [ chars | ids ] by { id ID | char CHAR } } -- get all known chars on acc_id"'
             'dig:"REGEXP -- grep + show ids by ids from grep matches"'
+            'summary:"{ gp | bp | exp | items } by { char CHAR | id ID | pcid PCID }"'
         )
         _alternative "subop:subcommand operation:((${ops}))"
     else
@@ -442,7 +443,7 @@ _tmww_plugin_server_party_show() {
 #
 
 _tmww_plugin_server_player() {
-    _arguments \
+    _arguments -s \
         "${_tmww_args_server[@]}" \
         "*:: :_tmww_plugin_server_player_args"
 }
@@ -685,7 +686,7 @@ _tmww_plugin_server_arseoscope() {
 
 _tmww_plugin_server_select() {
     local state
-    _arguments "${_tmww_args_select[@]}" "*:: :->select"
+    _arguments -s "${_tmww_args_select[@]}" "*:: :->select"
 
     case $state in
         select)

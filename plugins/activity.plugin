@@ -67,12 +67,11 @@ func_activity_chars() {
     check_dir "${TMWW_PRIVTMP}"
     set_pattern_lock
 
-    patternfile="${TMWW_PRIVTMP}/charname.pattern.${TMWW_INSTANCE}"
-    printf "%s" "${activity_excluded_chars}" | sort > "${patternfile}"
+    printf "%s" "${activity_excluded_chars}" | sort > "${activity_patt_file}"
     chnames=$( printf "%s" "${chnames}" | sort | \
-        comm_23 - "${patternfile}" )
+        comm_23 - "${activity_patt_file}" )
     [ -z "${chnames}" ] && return 1
-    printf "%s\n" "${chnames}" > "${patternfile}"
+    printf "%s\n" "${chnames}" > "${activity_patt_file}"
 
     # debug
     # printf "%s\n" "${chnames}"
@@ -238,7 +237,7 @@ aux_activity_parse() {
                 dump_hourly()
                 ${intern_activity_output_functions}
         }
-        " "${patternfile}" ${interval} 2>/dev/null | aux_activity_output "$1"
+        " "${activity_patt_file}" ${interval} 2>/dev/null | aux_activity_output "$1"
 }
 
 aux_activity_output() {
@@ -418,7 +417,7 @@ case "${activity_subcommand}" in
                                         }
                                     }
                                     END { if (matched == 1) exit 0 ; else exit 1 }
-                                    ' "${patternfile}" - )
+                                    ' "${activity_patt_file}" - )
                                 if [ $? -eq 0 ]; then
                                     i="${i#*/}"; i="${i%%.*}"
                                     printf "%s %s\n" "$i" "$result"
@@ -457,7 +456,7 @@ case "${activity_subcommand}" in
             /^- time/ { sub("^[^\"]*\"",""); sub("\".*$",""); recordtime=$0; next }
             /^ *logon/ { parser("on: ") }
             /^ *logoff/ { parser("off:") }
-            ' "${patternfile}" ${interval} 2>/dev/null | tail -n "${activity_lines_limit}"
+            ' "${activity_patt_file}" ${interval} 2>/dev/null | tail -n "${activity_lines_limit}"
         unset_pattern_lock
         ;;
     average)

@@ -52,14 +52,16 @@ check_agrep() {
 aux_char_conflicts() {
     chname=$( sed_chars "$2" )
     # double escaping: awk param, regex pattern
-    chescaped=$( printf "%s" "${chname}" | sed 's/\\/\\\\/g' )
-    ${AWK} ${AWKPARAMS} -v chname="${chescaped}" -v chline="$1 ${chname}" -v rundate="$(date -Ru)" \
+    chnameescaped=$( printf "%s" "${chname}" | sed 's/\\/\\\\/g' )
+    chescaped=$( printf "%s" "$2" | sed 's/\\/\\\\/g' )
+    ${AWK} ${AWKPARAMS} -v chname="${chnameescaped}" -v chline="$1 ${chescaped}" -v rundate="$(date -Ru)" \
         -v charconflicts="${charconflicts}" -- '
         function is_empty(checked_array,    checked_index) {
             for (checked_index in checked_array) return 0; return 1 }
         $0 ~ "^....... " chname "$" {
+            # print "debug chname " chname " chline " chline " 0 " $0 >> charconflicts
             if ( $0 != chline )
-                a [ NR ] = $0;
+                a [ NR ] = $0
             next
         }
         { print }
@@ -371,10 +373,9 @@ func_char_merge() {
 # 1 -- partyname
 # 2 -- charname
 aux_party_conflicts() {
-    chparty=$( sed_chars "$1" )
-    chname=$( sed_chars "$2" )
-    chparty=$( printf "%s\t%s" "${chparty}" "$2" )
+    chparty=$( printf "%s\t%s" "$1" "$2" | sed 's/\\/\\\\/g' )
     # double escaping: awk param, regex pattern
+    chname=$( sed_chars "$2" )
     chescaped=$( printf "%s" "${chname}" | sed 's/\\/\\\\/g' )
     ${AWK} ${AWKPARAMS} -F "" -v rundate="$(date -Ru)" -v partyconflicts="${partyconflicts}" \
         -v chparty="${chparty}" -v chname="${chescaped}" -- '
@@ -496,7 +497,7 @@ func_party_get() {
 
 aux_party_show_chars_by_party() {
     local chparty
-    chparty=$( sed_chars "$1" )
+    chparty=$( printf "%s" "$1" | sed 's/\\/\\\\/g' )
     ${AWK} ${AWKPARAMS} -v party="${chparty}" -- '
     BEGIN { matched = 0; FS = "\t" }
     { if ( $1 == party ) { print $2; matched = 1; }
@@ -514,7 +515,7 @@ aux_party_show_ids_by_party() {
 # multiple times
 aux_party_show_chars_by_char() {
     local chname
-    chname=$( sed_chars "$1" )
+    chname=$( printf "%s" "$1" | sed 's/\\/\\\\/g' )
     ${AWK} ${AWKPARAMS} -v char="${chname}" -- '
     BEGIN { matched = 0; maxchars = 15 ; charcount = ""
         prev_party = "" ; split("", charalts); FS="\t" }

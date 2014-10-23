@@ -28,7 +28,54 @@ fi
 
 help_server() {
     cat << EOF
-FIXME
+server.plugin - server text databases operation
+
+subcommand: char -- character database handler  
+    grep [ chars | ids | pcids ] REGEXP -- search known names, output names/names with ids
+    fuzzy [ chars | ids | pcids ] PATTERN -- case-insensitive levenshtein distance 1 search
+    agrep [ -e ERRORS ] [ chars | ids | pcids ] PATTERN -- approximate grep with max ERRORS
+    [-cnar] [-f EXPR] [-s NUM] get { CHAR | [ skills | inventory | vars | id | char | accs | db | FIELD+ ]
+        by { char CHAR | pcid PCID } }
+    [-cnar] [-f EXPR] [-s NUM] show { CHAR | [ parties | storage | vars | ids | chars | accs | db | FIELD+ ]
+        by { char CHAR | id ID | pcid PCID } }
+    dig REGEXP -- grep + show pcids by ids from grep matches
+    [ -t ] summary { gp | bp | exp | items } by { char CHAR | id ID | pcid PCID }
+subcommand: party -- party database handler  
+    { grep | fuzzy | agrep [ -e ERRORS ] } REGEXP -- search party name by pattern
+    get { CHAR | by { char CHAR | pcid PCID } }
+    show { CHAR | [ pcids | ids | chars | players ]
+        by { char CHAR | party PARTY | partyid PARTYID | pcid PCID } }
+    { grep | fuzzy | agrep [ -e ERRORS ] } PATTERN -- grep/approximate grep party name
+    dig PATTERN -- grep + show ids/charname of party members
+subcommand: player -- players database handler  
+    ref -- field types quick reference
+    create PLAYER
+    remove PLAYER
+    rename PLAYER to PLAYER
+    add PLAYER FIELD value VALUE
+    add PLAYER FIELD element VALUE -- adding alts will automatically resolve charname into account
+    resolve PLAYER -- resolve all player alts into accounts
+    del PLAYER FIELD
+    del PLAYER FIELD element VALUE
+    [-cnar] [-f EXPR] [-s NUM] get { CHAR | by { char CHAR | id ACCID | pcid PCID } }
+    [-cnar] [-f EXPR] [-s NUM] show { PLAYER | [ ids | chars | parties | accs | db | FIELD+ ]
+        by { char CHAR | id ID | pcid PCID } }
+    [ -t ] summary { gp | bp | exp | items } by { char CHAR | id ID | player PLAYER | pcid PCID }
+    list with FIELD
+    list with { FIELD [ not ] as VALUE | VALUE [ not ] in FIELD }+
+    dump PLAYER -- dump JSONline record of PLAYER; tmww player dump veryape
+    record NUMBER -- access players db record by it's order number
+    append STRING -- NOT SAFE append JSON player record of same format as with dump operation to end of dbplayers
+        you should try sanitize operation if you not sure if there are duplicate entries or fields
+    keys PLAYER -- tmww player keys veryape
+    field PLAYER FIELD [FIELD]... -- tmww player field veryape name aka
+    search STRING -- simple search in all fields
+    sanitize -- remove keys with 0 length - empty arrays and hashes with null value
+        resolve alts into accounts, report duplicate accounts and alts
+    lregen -- regenerate shortened playerdb version if limiteddb is in use
+subcommand: arseoscope CHAR -- observe player alias/number of known accounts/alts
+subcommand: select -- search inventory/storage  
+    [-incs] by { ids ITEMID+ | names ITEMNAME+ | re REGEXP | itemsets GLOB+ }
 EOF
 }
 

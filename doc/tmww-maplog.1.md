@@ -5,46 +5,68 @@ maplog.plugin - awk wrapper for parsing map log
 Usage
 -----
 
-    maplog arguments: [ opts ] query [ log ]*
+    maplog arguments: OPTIONS [ LOG ]*
     Time interval options:
-        -f "YYYY-MM-DD[ HH:MM:SS]" -- from; HH:MM:SS is optional
-        [ -t "YYYY-MM-DD [ HH:MM:SS]" ] -- to; HH:MM:SS is optional
+        [ -f "YYYY-MM-DD[ HH:MM:SS]" ] -- from; HH:MM:SS is optional
+        [ -t "YYYY-MM-DD[ HH:MM:SS]" ] -- to; HH:MM:SS is optional
+        [ -d N ] -- last N days
+        [ -m N ] -- last N months
     PCIDs query generation:
-        { -p PLAYER }* -- add chars by PLAYER
-        { -a ACCID }* -- add chars by ACCID
-        { -c CHAR }* -- add char
-        { -C CHAR }* -- add chars by CHAR (same account)
-        { -x CHAR }* -- remove CHAR from query
-        { -X CHAR }* -- remove chars by CHAR from query
-        { -w PCID }* -- add PCID
-        { -d PCID }* -- remove PCID
-    Other options:
-        [ -e FILE ] -- external file with pcids
-        [ -i INT ] -- grep generated pcids on field number INT
+        [ -p PLAYER ]* -- include chars by PLAYER
+        [ -a ACCID ]* -- include chars by ACCID
+        [ -c CHAR ]* -- include char
+        [ -C CHAR ]* -- include chars by CHAR (same account)
+        [ -x CHAR ]* -- exclude CHAR
+        [ -X CHAR ]* -- exclude chars on account by CHAR
+        [ -w PCID ]* -- include PCID
+        [ -W PCID ]* -- exclude PCID
+    Item query:
+        [ -i NAME ] -- include item name
+        [ -y ID ] -- include item by id
+        [ -I GLOB ] -- include itemsets by glob
+    Configured query:
+        [ -u SECTION ] -- use expression from section SECTION in config
+            shipped filters are: sell, buy, frisk
+        [ -q EXPR ] -- additional condition to match log record
+        [ -Q EXPR ] -- expression executed after PCIDs and all other criterias matched
+    Custom search:
+        [ -n INT ] -- grep generated PCIDs on field number INT
+        [ -N INT ] -- grep generated item IDs on field number INT
+        [ -z ] -- all PCIDs conversion (terribly slow)
+        [ -Z ] -- all item IDs conversion (slow)
         [ -r ] -- prefix pcids with "PC"
-        [ -b EXPR ] -- BEGIN awk expressions
-        [ -z ] -- logs are complessed with gzip
-        [ -n ] -- nondefault maplog name format (default has timestamp)
+        [ -R ] -- no readable PCIDs/item IDs conversion
         [ -o OPERATION ] -- shortcut to query filter '$5=="OPERATION"'
-    Filter:
-        query -- awk expression with few predefined arrays
-        item_rares - array of rare item ids
+        [ -b EXPR ] -- BEGIN awk expressions
+        [ -q EXPR ] -- additional condition to match log record
+        [ -Q EXPR ] -- expression executed after PCIDs and all other criterias matched
     Logs:
-        logs -- gzipped logs; default filename mask is "map.log.*.gz"
+        logs -- custom location gzipped logs; default filename mask is "map.log.*.gz"
+            with default location as $SERVERPATH/world/map/log
 
 Config
 ------
 
-MAPLOGPATH  
+MAPLOGPATH : string -> $SERVERPATH/world/map/log 
     location of map logs
+MAPLOGSHIFT : int -> 1024
+    shift of timestamp in maplog name. Default name format is: map.log.TIMESTAMP.gz
 
 Example
 -------
 
-    $ tmww maplog -C 'Roaming Merchant' -f 2014-08-01 -t 2014-09-01
-        -o '^trade' '($9 > 100000 || $11 > 300 )' -- map.log.*.gz
+    $ tmww maplog -zZ -c 'Roaming Merchant' -u sell -q 'gp >= 10000' -f 2014-08 -t 2014-08
+    $ tmww maplog -zZ -p ginaria -u frisk -I 'rares*'
 
-See tmwa distribution for map log format.
+Map log format for tmwa as of 2014-10 distributed with tmww doc.
+
+Notes
+-----
+
+Sections may define readable field names for use in -q option, e.g. with
+default "sell" filter field FIXME available as "gp".
+
+In case -z or -Z option used, cached PCIDs and item IDs are stored in $PRIVTMP.
 
 Copyright
 ---------
@@ -56,5 +78,5 @@ TEMPLATE(AUTHORS)
 
 See also
 --------
-tmww(1), tmww-config(5), tmww-server(1)
+tmww(1), tmww-config(5), tmww-server(1), tmww-db(1)
 
