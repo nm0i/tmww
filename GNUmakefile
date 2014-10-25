@@ -38,7 +38,7 @@ multiuser:
 	@mkdir -p ~/.config/tmww
 	@cp -RP conf/* ~/.config/tmww
 	@mkdir -p ~/.tmp/lock
-	@rm ~/.oh-my-zsh/cache/TMWW*
+	@rm -rf ~/.oh-my-zsh/cache/TMWW*
 	@mkdir -p ~/.oh-my-zsh/custom/plugins/tmww
 	@cp ./zsh/tmww.plugin.zsh ~/.oh-my-zsh/custom/plugins/tmww
 

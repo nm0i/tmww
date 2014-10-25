@@ -24,12 +24,14 @@ messages: $(MESSAGES)
 
 messagesdir:
 	mkdir -p $(LOGPATH)/messages
+	chmod 770 $(LOGPATH)/messages
 
 $(MESSAGES) : $(LOGPATH)/messages/messages.% : $(LOGPATH)/gm.log.% | messagesdir
 	egrep -A 2 -B 2 '@l ' "$<" > "$@"
 
 recordsdir:
 	mkdir -p $(LOGPATH)/records
+	chmod 770 $(LOGPATH)/records
 
 bans: $(BANS)
 
@@ -57,6 +59,7 @@ dbupdate: $(FILED)
 
 fileddir:
 	@mkdir -p $(LOGPATH)/dbupdate
+	@chmod 770 $(LOGPATH)/dbupdate
 
 $(FILED) : $(LOGPATH)/dbupdate/filed.% : $(LOGPATH)/records/bans.% | fileddir
 	@grep -v '+5mn' "$<" "$(subst $(LOGPATH)/records/bans,$(LOGPATH)/records/blocks,$<)" | \

@@ -32,7 +32,8 @@ EOF
 [ "$TMWW_PLUGINHELP" = "yes" ] && help_crime && return 0
 [ "$TMWW_PLUGINEXPORT" = "yes" ] && return 0
 
-TMWW_CRIMEPATH="${TMWW_CRIMEPATH:-${HOME}/log/gm/${servername}}"
+TMWW_CRIMEPATH="${TMWW_CRIMEPATH:-${HOME}/log/gm/}"
+TMWW_CRIMEPATH="${TMWW_CRIMEPATH}/${servername}"
 
 TMWW_CRIMELOCK="${TMWW_LOCK}/tmww-crime-${servername}"
 
