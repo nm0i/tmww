@@ -28,7 +28,7 @@ Example
 
 Example cron record for updating players records:
 
-    * 5 * * * tmww crime -upf >/dev/null 2>&1
+    * 5 * * * tmww crime -urf >/dev/null 2>&1
 
 Option -f sets field "crime" to value "true" if some of known player alts got
 ban/block over time. For reverse search use alts/server grep operation:
