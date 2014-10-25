@@ -238,6 +238,9 @@ aux_parser_code() {
         -v pcids_field="${pcids_fields}" -v itemids_field="${itemids_field}" \
         -v filter_condition="${filter_condition:+1}" -v filter_code="${filter_code:+1}" \
         -v filter_operation="${filter_operation}" -v convert_ids="${convert_ids}" \
+        -v convert_all_pcids="${convert_all_pcids}" -v convert_all_itemids="${convert_all_itemids}" \
+        -v cache_pcids="${TMWW_PRIVTMP}/cache_pcids_${servername}" \
+        -v cache_itemids="${TMWW_PRIVTMP}/cache_itemids_${servername}" \
         -- "
     function is_empty(checked_array,    checked_index) {
         for (checked_index in checked_array) return 0; return 1

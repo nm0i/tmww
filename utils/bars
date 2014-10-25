@@ -1,0 +1,18 @@
+#!/bin/sh
+AWK="$(command -v mawk)"
+AWK="${AWK:-awk}"
+${AWK} -v s="${2:-*}" -v w="${1:-12}" -- '
+    {
+        h[NR] = $1; r[NR] = $0
+        m = $1 > m ? $1 : m
+        l = length() > l ? length() : l
+    }
+    END {
+        for (i=1;i<=NR;i++) {
+            k = ""
+            for (j=0;j<int(h[i]/m*w);j++) k = k s
+            printf "%-*s [%-*s]\n", l, r[i], w, k
+        }
+    }
+'
+

@@ -1,0 +1,132 @@
+#!/bin/sh
+# tmww plugin: crime
+# whatis: operations on public GM logs
+# conflicts: -
+# depends: -
+# recommends: watch.plugin, alts.plugin or server.plugin - require dbplayers.jsonl
+
+# this file is part of tmww - the mana world watcher
+# willee, 2012-2014
+# GPL v3
+
+# check if not run as plugin
+if [ "$TMWW_PLUGINS" != "yes" ] ; then
+    echo >&2 "This script is tmww plugin and rely heavily on it's facilities."
+    exit 1
+fi
+
+help_crime() {
+    cat << EOF
+crime -- operations on public GM logs
+
+Options:
+    -u  -- mirror GM logs folder
+    -m  -- cut readable messages
+    -r  -- parse logs for ban/block records
+    -f  -- fill up player records with ban/block results
+    -b  -- GM stats for bans (cumulative with -B)
+    -B  -- GM stats for blocks (cumulative with -b)
+EOF
+}
+
+[ "$TMWW_PLUGINHELP" = "yes" ] && help_crime && return 0
+[ "$TMWW_PLUGINEXPORT" = "yes" ] && return 0
+
+TMWW_CRIMEPATH="${TMWW_CRIMEPATH:-${HOME}/log/gm/${servername}}"
+
+TMWW_CRIMELOCK="${TMWW_LOCK}/tmww-crime-${servername}"
+
+set_crime_lock() {
+    check_lock "crime" "${TMWW_CRIMELOCK}" 120
+}
+
+unset_crime_lock() {
+    rmdir "${TMWW_CRIMELOCK}" 2>/dev/null
+}
+
+#
+# options parser
+#
+#
+
+crime_update=
+crime_messages=
+crime_records=
+crime_fill=
+crime_gmbans=
+crime_gmblocks=
+
+OPTIND=1
+while ${GETOPTS} umrfbB opt ; do
+    case "${opt}" in
+        u)  crime_update=1 ;;
+        m)  crime_messages=1 ;;
+        r)  crime_records=1 ;;
+        f)  crime_fill=1 ;;
+        b)  crime_gmbans=1 ;;
+        B)  crime_gmblocks=1 ;;
+    esac
+done
+
+if [ -n "${crime_update}" ]; then
+    set_crime_lock
+    (
+        mkdir -p "${TMWW_CRIMEPATH}"
+        cd "${TMWW_CRIMEPATH}"
+        wget -c -r -N -nH --cut-dirs=1 -A 'gm.log.*' -X '*/*' -np -l 0 \
+            ${servername}/gm >/dev/null 2>&1
+    )
+    unset_crime_lock
+fi
+
+if [ -n "${crime_messages}" ]; then
+    set_crime_lock
+    (
+        cd "${TMWW_UTILPATH}"
+        LOGPATH="${TMWW_CRIMEPATH}" make -ef gmlog.makefile messages
+    )
+    unset_crime_lock
+fi
+
+if [ -n "${crime_records}" ]; then
+    set_crime_lock
+    (
+        cd "${TMWW_UTILPATH}"
+        LOGPATH="${TMWW_CRIMEPATH}" make -ef gmlog.makefile records
+    )
+    unset_crime_lock
+fi
+
+if [ -n "${crime_fill}" ]; then
+    # feel free to override to server.plugin in config
+    requireplugin alts.plugin || return 1
+    set_crime_lock
+    (
+        cd "${TMWW_UTILPATH}"
+        LOGPATH="${TMWW_CRIMEPATH}" make -ef gmlog.makefile dbupdate
+    ) | sort -u | sed 's/'\''/'\''"'\''"'\''/g' | while read -r line; do
+            pname=$( aux_player_get_by_char "${line}" )
+            [ -n "${pname}" ] && {
+                printf >&2 "Found %s as char %s\n" "${pname}" "${line}"
+                printf "%s\n" "${pname}"
+            }
+        done | sort -u | while read -r player; do
+            echo Adding "${player}"
+            func_player_add "${player}" crime value true
+        done
+    unset_crime_lock
+fi
+
+if [ -n "${crime_gmbans}" -o -n "${crime_gmblocks}" ]; then
+    {
+        [ -n "${crime_gmbans}" ] && \
+            sed ${ESED} 's/^[^ ]+ [^ ]+ [^ ]+ ([^(:]+).*/\1/;s/ *$//' \
+            "${TMWW_CRIMEPATH}/records/bans."*
+        [ -n "${crime_gmblocks}" ] && \
+            sed ${ESED} 's/^[^ ]+ [^ ]+ [^ ]+ ([^(:]+).*/\1/;s/ *$//' \
+            "${TMWW_CRIMEPATH}/records/blocks."*
+    } | sort | uniq -c | sort -rn | ${TMWW_UTILPATH}/bars
+fi
+
+return 0
+

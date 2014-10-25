@@ -177,8 +177,6 @@ func_player_show() {
 aux_player_get_by_char() {
     result=$(func_char_get "$1")
     if [ -z "$result" ]; then
-        check_string_chars "$1" "*[!a-zA-Z0-9-_/\\\!\@\#\$\%^\&\*\(\)\,\.\'\ ]*" \
-            "Disallowed characters at charname" || return 1
         # triple escaping: awk param, regex pattern, json value
         # like sed-chars but without "/" (skipping gawk warning)
         chname=$( printf "%s" "$1" |
@@ -669,6 +667,19 @@ func_arseoscope() {
         aux_char_show_chars_by_id "${result}" | make_csv
         echo
     }
+}
+
+#
+# grep
+#
+#
+
+# all arguments after 1st are taken as grep arguments
+func_grep() {
+    [ -z "$2" ] && { error_missing; return 1; }
+    result=$( func_player_show chars by player "$1" )
+    shift
+    [ -z "${result}" ] || grep -F "${result}" "$@"
 }
 
 #

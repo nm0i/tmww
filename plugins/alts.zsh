@@ -26,6 +26,7 @@ alias tcsi="tmww char show by id"
 alias tcg="tmww char get"
 
 alias ta="tmww arseoscope"
+alias tgrep="tmww grep"
 
 #
 # config
@@ -135,6 +136,7 @@ _tmww_plugin_alts() {
                 'party:"operations on party:charname database"'
                 'player:"operations on JSONlines players database"'
                 'arseoscope:"compact CHARNAME description - accounts known, chars on same account"'
+                'grep:"generate pattern from known player chars and do grep"'
             )
             _alternative "subcommand:subcommand:((${ops}))"
         else
@@ -628,5 +630,17 @@ _tmww_plugin_alts_player_list() {
 _tmww_plugin_alts_arseoscope() {
     _arguments \
         ': :_tmww_arg_chars'
+}
+
+#
+# grep op
+#
+#
+
+# PLAYER GREPARGS
+_tmww_plugin_alts_grep() {
+    _arguments \
+        ': :_tmww_arg_players' \
+        '*::"grep arguments":_files'
 }
 

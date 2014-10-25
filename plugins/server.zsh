@@ -26,6 +26,7 @@ alias scg="tmww schar get"
 alias scu="tmww schar summary"
 
 # reusing "tmww arseoscope" alias (default "ta") from alts.zsh
+# reusing "tmww grep" alias (default "tgrep") from alts.zsh
 
 alias ssel="tmww select"
 
@@ -133,6 +134,7 @@ _tmww_plugin_server() {
                 'player:"operations on JSONlines players database"'
                 'arseoscope:"compact CHARNAME description - accounts known, chars on same account"'
                 'select:"search chars by inventory and storage"'
+                'grep:"generate pattern from known player chars and do grep"'
             )
             _alternative "subcommand:subcommand:((${ops}))"
         else
@@ -677,6 +679,18 @@ _tmww_plugin_server_player_list() {
 _tmww_plugin_server_arseoscope() {
     _arguments \
         ': :_tmww_arg_chars'
+}
+
+#
+# grep op
+#
+#
+
+# PLAYER GREPARGS
+_tmww_plugin_server_grep() {
+    _arguments \
+        ': :_tmww_arg_players' \
+        '*::"grep arguments":_files'
 }
 
 #

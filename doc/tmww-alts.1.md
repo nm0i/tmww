@@ -58,6 +58,8 @@ subcommand: player -- players database handler
 
 subcommand: arseoscope CHAR -- observe player alias/number of known accounts/alts
 
+subcommand: grep PLAYER GREPARGS -- generate pattern from known player chars and do grep
+
 Glossary
 --------
 
