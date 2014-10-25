@@ -10,6 +10,8 @@ _tmww_plugin_crime() {
         '-r[parse logs for ban/block records]' \
         '-f[fill up player records with ban/block results]' \
         '-b[GM stats for bans (cumulative with -B)]' \
-        '-B[GM stats for blocks (cumulative with -b)]'
+        '-B[GM stats for blocks (cumulative with -b)]' \
+        '-c[clean database marks (e.g. to refill upgraded players DB)]' \
+        '(-)-p[PLAYER -- search marks for PLAYER chars]: :_tmww_arg_players'
 }
 

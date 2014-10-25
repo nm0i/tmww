@@ -2,7 +2,6 @@
 #
 # defaults
 LOGPATH:=${HOME}/log/gm/server.themanaworld.org
-TCONFIG:=default
 
 LOGS:=$(shell find "$(LOGPATH)" -name "gm*" -type f -printf '%f\n' )
 MESSAGES := $(LOGS:gm.log.%=messages/messages.%)

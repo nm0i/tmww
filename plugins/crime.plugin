@@ -20,12 +20,14 @@ help_crime() {
 crime -- operations on public GM logs
 
 Options:
-    -u  -- mirror GM logs folder
-    -m  -- cut readable messages
-    -r  -- parse logs for ban/block records
-    -f  -- fill up player records with ban/block results
-    -b  -- GM stats for bans (cumulative with -B)
-    -B  -- GM stats for blocks (cumulative with -b)
+    -u -- mirror GM logs folder
+    -m -- cut readable messages
+    -r -- parse logs for ban/block records
+    -f -- fill up player records with ban/block results
+    -b -- GM stats for bans (cumulative with -B)
+    -B -- GM stats for blocks (cumulative with -b)
+    -c -- clean database marks (e.g. to refill upgraded players DB)
+    -p PLAYER -- search marks for PLAYER chars
 EOF
 }
 
@@ -56,9 +58,11 @@ crime_records=
 crime_fill=
 crime_gmbans=
 crime_gmblocks=
+crime_clear=
+crime_player=
 
 OPTIND=1
-while ${GETOPTS} umrfbB opt ; do
+while ${GETOPTS} umrfbBcp: opt ; do
     case "${opt}" in
         u)  crime_update=1 ;;
         m)  crime_messages=1 ;;
@@ -66,8 +70,20 @@ while ${GETOPTS} umrfbB opt ; do
         f)  crime_fill=1 ;;
         b)  crime_gmbans=1 ;;
         B)  crime_gmblocks=1 ;;
+        c)  crime_clear=1 ;;
+        p)  crime_player="${OPTARG}" ;;
     esac
 done
+
+if [ -n "${crime_player}" ]; then
+    # feel free to override to server.plugin in config
+    requireplugin alts.plugin || return 1
+    func_player_show chars by player "${crime_player}" | ${AWK} ${AWKPARAMS} -- '
+        NR==FNR { c[$0]=1; m=1; next }
+        !m { exit }
+        { for (i in c) if (index(substr($0,index($0," : ")),i)) print }
+        ' - "${TMWW_CRIMEPATH}/records/bans."* "${TMWW_CRIMEPATH}/records/blocks."*
+fi
 
 if [ -n "${crime_update}" ]; then
     set_crime_lock
@@ -95,6 +111,12 @@ if [ -n "${crime_records}" ]; then
         cd "${TMWW_UTILPATH}"
         LOGPATH="${TMWW_CRIMEPATH}" make -ef gmlog.makefile records
     )
+    unset_crime_lock
+fi
+
+if [ -n "${crime_clear}" ]; then
+    set_crime_lock
+    rm -rf "${TMWW_CRIMEPATH}"/dbupdate/*
     unset_crime_lock
 fi
 

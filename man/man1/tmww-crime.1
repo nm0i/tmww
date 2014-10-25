@@ -6,11 +6,7 @@
 .SH SYNOPSIS
 .nf
 .fam C
-.nf
-.fam C
-    crime [-umrfbB]
-.fam T
-.fi
+\fBcrime\fP [\fB-umrfbB\fP]
 .PP
 .fam T
 .fi
@@ -39,6 +35,14 @@ GM stats for bans (cumulative with \fB-B\fP)
 .B
 \fB-B\fP
 GM stats for blocks (cumulative with \fB-b\fP)
+.TP
+.B
+\fB-c\fP
+clean database marks (e.g. to refill upgraded players DB)
+.TP
+.B
+\fB-p\fP PLAYER
+search marks for PLAYER chars
 .PP
 .SH CONFIG
 CRIMEPATH : string -> $HOME/log/gm/$servername
@@ -47,20 +51,25 @@ path to GM logs and parsed files
 .SH EXAMPLE
 Example cron record for updating players records:
 .IP \(bu 3
-5 * * * tmww crime \fB-urf\fP >/dev/null 2>&1
+5 * * * tmww \fBcrime\fP \fB-urcf\fP >/dev/null 2>&1
 .PP
-Option \fB-f\fP sets field "crime" to value "true" if some of known player alts got
-ban/block over time. For reverse search use alts/server grep operation:
+Option \fB-f\fP sets field \fBcrime\fP" to value "true" if some of known player alts got
+ban/block over time. For reverse search use \fB-p\fP operation
 .PP
 .nf
 .fam C
-    $ cd ~/log/gm/server.themanaworld.org/records
-    $ tmww grep bbb ban* block*
+    $ tmww crime -p bbb
 .fam T
 .fi
 .PP
+.SH NOTES
+Delete $CRIMEPATH/dbupdate/* files to make fresh upgrade to player db
+.PP
 .SH BUGS
-\fB-m\fP , \fB-r\fP and \fB-f\fP options perform update using GNU make
+\fB-m\fP , \fB-r\fP and \fB-f\fP options perform update using GNU make.
+.PP
+\fB-p\fP option is quite noizy but much better than simple grep or alts/server grep
+operation.
 .PP
 .SH COPYRIGHT
 This document is part of tmww - The Mana World Watcher scripts.

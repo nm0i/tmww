@@ -5,17 +5,19 @@ crime - operations on public GM logs
 Synopsis
 --------
 
-    crime [-umrfbB]
+crime [-umrfbB]
 
 Options
 -------
 
--u  mirror GM logs folder
--m  cut readable messages
--r  parse logs for ban/block records
--f  fill up player records with ban/block results
--b  GM stats for bans (cumulative with -B)
--B  GM stats for blocks (cumulative with -b)
+-u          mirror GM logs folder
+-m          cut readable messages
+-r          parse logs for ban/block records
+-f          fill up player records with ban/block results
+-b          GM stats for bans (cumulative with -B)
+-B          GM stats for blocks (cumulative with -b)
+-c          clean database marks (e.g. to refill upgraded players DB)
+-p PLAYER   search marks for PLAYER chars
 
 Config
 ------
@@ -28,18 +30,25 @@ Example
 
 Example cron record for updating players records:
 
-    * 5 * * * tmww crime -urf >/dev/null 2>&1
+    * 5 * * * tmww crime -urcf >/dev/null 2>&1
 
 Option -f sets field "crime" to value "true" if some of known player alts got
-ban/block over time. For reverse search use alts/server grep operation:
+ban/block over time. For reverse search use -p operation
 
-    $ cd ~/log/gm/server.themanaworld.org/records
-    $ tmww grep bbb ban* block*
+    $ tmww crime -p bbb
+
+Notes
+-----
+
+Delete $CRIMEPATH/dbupdate/* files to make fresh upgrade to player db
 
 Bugs
 ----
 
--m , -r and -f options perform update using GNU make
+-m , -r and -f options perform update using GNU make.
+
+-p option is quite noizy but much better than simple grep or alts/server grep
+operation.
 
 Copyright
 ---------
