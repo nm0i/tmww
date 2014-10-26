@@ -40,7 +40,8 @@ ban/block over time. For reverse search use -p operation
 Notes
 -----
 
-Delete $CRIMEPATH/dbupdate/* files to make fresh upgrade to player db
+Delete $CRIMEPATH/dbupdate/* files with -c option to make fresh upgrade to
+player db.
 
 Bugs
 ----

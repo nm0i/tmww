@@ -1,0 +1,34 @@
+#!/bin/sh
+# http://themanaworld.org/
+# stat value limit: 99
+# level limit:      99
+# this file is part of tmww - the mana world watcher scripts
+# GPL 3, willee, 2014
+#
+usage() { echo usage: stats LVL [STR AGI VIT INT DEX LUK] ; exit 1 ; }
+: ${1:?$(usage)}
+AWK="$(command -v mawk)"
+AWK="${AWK:-awk}"
+[ -n "$8" ] && usage
+lvl="$1"
+shift
+${AWK} -v lvl="${lvl}" -v stats="$*" -- '
+    BEGIN {
+        lvl = lvl < 1 ? 1 : ( lvl > 99 ? 99 : lvl )
+        split(stats,s)
+        m[0] = 45
+        for (i=1; i<100; i++) m[i] = m[i-1] + int((i+14)/4)
+        if ( s[1] == "" ) { print m[lvl]; exit }
+        p = m[lvl] + 6; b[0] = -1
+        for ( i = 1; i < 10 ; i++ ) b[i] = (i+1) * 10 + b[i-1] - 1
+        for ( i = 1; i < 7; i++ ) {
+            s[i] = s[i] < 1 ? 1 : ( s[i] > 99 ? 99 : s[i] )
+            k = int( s[i] / 10 )
+            n = s[i] % 10
+            p -= b[k] + ( k + 2 ) * n + 1 * (n == 0)
+        }
+        p = p != 0 ? "; " p " pts left" : ""
+        print "stats: lvl", lvl, ":", s[1], s[2], s[3], s[4], s[5], s[6], p
+    }
+'
+
