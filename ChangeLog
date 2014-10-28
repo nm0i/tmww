@@ -1,19 +1,19 @@
+2014-10-28  willee  <v4r@trioptimum.com>
+	d1281ed fix crime
+2014-10-26  willee  <v4r@trioptimum.com>
+	7a4ee58 add stats util
+2014-10-25  willee  <v4r@trioptimum.com>
+	52d0d74 add crime -p option
+	97d4d34 add crime plugin
+2014-10-23  willee  <v4r@trioptimum.com>
+	cd700ae add maplog plugin
+2014-10-17  willee  <v4r@trioptimum.com>
 2014-10-16  willee  <v4r@trioptimum.com>
-	a1001ec re: fix
-	17581c4 re: re: fix
-	8436482 re: fix
 	4d74de3 fix manuals
 2014-10-15  willee  <v4r@trioptimum.com>
-	fe3603a fix
 	e8b9ffb add shtest -c option
-	06980fd fix
 	14482f6 configs cleanup
-	297776e re: re: re: re: re: fix
-	ce28cd8 re: re: re: re: fix
-	0d2d893 re: re: re: fix
 2014-10-14  willee  <v4r@trioptimum.com>
-	9388185 re: re: fix
-	030251d re: fix
 	6422487 cleanup fixes
 	5c2ade1 add db and server completion
 2014-10-11  willee  <willee@local.host>

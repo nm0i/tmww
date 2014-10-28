@@ -71,7 +71,6 @@ subcommand: player -- players database handler
     sanitize -- remove keys with 0 length - empty arrays and hashes with null value
         resolve alts into accounts, report duplicate accounts and alts
     lregen -- regenerate shortened playerdb version if limiteddb is in use
-subcommand: grep PLAYER GREPARGS -- generate pattern from known player chars and do grep
 EOF
 }
 
@@ -218,7 +217,6 @@ alts_main_parser() {
         party)      alts_parse_party "$@" ;;
         player)     alts_parse_player "$@" ;;
         arseoscope) func_arseoscope "$@" ;;
-        grep)       func_grep "$@" ;;
         '')         error_missing; return 1 ;;
         *)          error_incorrect; return 1 ;;
     esac

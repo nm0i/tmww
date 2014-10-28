@@ -1,0 +1,57 @@
+#!/bin/sh
+# tmww plugin: utils
+# whatis: miscellineous uncategorized scripts
+# conflicts: -
+# depends: alts/server.plugin, stats util
+# recommends: -
+
+# this file is part of tmww - the mana world watcher
+# willee, 2012-2014
+# GPL v3
+
+# check if not run as plugin
+if [ "$TMWW_PLUGINS" != "yes" ] ; then
+    echo >&2 "This script is tmww plugin and rely heavily on it's facilities."
+    exit 1
+fi
+
+help_utils() {
+    cat << EOF
+util - miscellineous uncategorized scripts
+
+    subcommand: grep PLAYER GREPARGS -- grep text for player alts
+    subcommand: find PLAYER -- lookup online player list for player alts
+    subcommand: stats LVL [STR AGI VIT INT DEX LUK] -- invoke stats script from $UTILPATH
+EOF
+}
+
+[ "$TMWW_PLUGINHELP" = "yes" ] && help_utils && return 0
+[ "${TMWW_PLUGINEXPORT}" = "yes" ] && return 0
+
+subcommand="$1"
+shift
+OPTIND=1
+case "${subcommand}" in 
+    grep)
+        requireplugin alts.lib.sh || return 1
+        # all arguments after 1st are taken as grep arguments
+        [ -z "$2" ] && { error_missing; return 1; }
+        result=$( func_player_show chars by player "$1" )
+        shift
+        [ -z "${result}" ] || grep -F "${result}" "$@"
+        ;;
+    find)
+        requireplugin alts.lib.sh || return 1
+        [ -z "$1" ] && { error_missing; return 1; }
+        [ -n "$2" ] && { error_toomuch; return 1; }
+        result=$( func_player_show chars by player "$1" | sort |
+            comm_12 "${list_online}" - | make_qcsv )
+        [ -n "${result}" ] && printf "Player \"%s\" is now online as %s\n" "$1" "${result}"
+        ;;
+    stats)
+        "${TMWW_UTILPATH}/stats" "$@"
+        ;;
+    '') error_missing; return 1 ;;
+    *)  error_incorrect; return 1 ;;
+esac
+

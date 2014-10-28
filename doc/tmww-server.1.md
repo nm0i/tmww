@@ -60,8 +60,6 @@ subcommand: select -- search inventory/storage
 
     [-incs] by { ids ITEMID+ | names ITEMNAME+ | re REGEXP | itemsets GLOB+ }
 
-subcommand: grep PLAYER GREPARGS -- generate pattern from known player chars and do grep
-
 Glossary
 --------
 Further text operates next terms:

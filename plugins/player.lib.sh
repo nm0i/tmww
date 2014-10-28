@@ -670,19 +670,6 @@ func_arseoscope() {
 }
 
 #
-# grep
-#
-#
-
-# all arguments after 1st are taken as grep arguments
-func_grep() {
-    [ -z "$2" ] && { error_missing; return 1; }
-    result=$( func_player_show chars by player "$1" )
-    shift
-    [ -z "${result}" ] || grep -F "${result}" "$@"
-}
-
-#
 # shared
 #
 #

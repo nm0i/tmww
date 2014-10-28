@@ -76,7 +76,6 @@ subcommand: player -- players database handler
 subcommand: arseoscope CHAR -- observe player alias/number of known accounts/alts
 subcommand: select -- search inventory/storage  
     [-incs] by { ids ITEMID+ | names ITEMNAME+ | re REGEXP | itemsets GLOB+ }
-subcommand: grep PLAYER GREPARGS -- generate pattern from known player chars and do grep
 EOF
 }
 
@@ -247,7 +246,6 @@ server_main_parser() {
         player)     server_parse_player "$@" ;;
         select)     func_select "$@" ;;
         arseoscope) func_arseoscope "$@" ;;
-        grep)       func_grep "$@" ;;
         # dump compiled fields
         ref)        func_server_ref "$@" ;;
         '')         error_missing; return 1 ;;

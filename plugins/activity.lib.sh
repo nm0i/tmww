@@ -175,8 +175,10 @@ aux_form_interval() {
 }
 
 # credits https://github.com/holman/spark
+# details and license included in dashspark util distributed alongside this scripts set
 spark() {
-    local step numbers min=1000000000000 max=0
+    local step numbers min max
+    min=1000000000000; max=0
     [ -z "${minspark}" ] || min="${minspark}"
     [ -z "${maxspark}" ] || max="${maxspark}"
 
