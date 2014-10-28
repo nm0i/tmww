@@ -28,6 +28,7 @@ EOF
 [ "$TMWW_PLUGINHELP" = "yes" ] && help_utils && return 0
 [ "${TMWW_PLUGINEXPORT}" = "yes" ] && return 0
 
+[ -z "$1" ] && { error_missing; return 1; }
 subcommand="$1"
 shift
 OPTIND=1
