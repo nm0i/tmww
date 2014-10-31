@@ -104,7 +104,7 @@ _tmww_arg_chars() {
     #_tmww_debug ${fname}
     if [ -f "${fname}" ]; then
         # protecting ":" for _describe
-        _opt_tmww_chars=( ${(f)mapfile[${fname}]//:/\\:} )
+        _opt_tmww_chars=( ${${(f)mapfile[${fname}]//\\/\\\\}//:/\\:} )
         _describe "$_desc_arg_char" _opt_tmww_chars
     else
         _message "no online list found to complete chars"
