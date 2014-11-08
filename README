@@ -12,3 +12,19 @@ Links:
 http://themanaworld.org/
 https://github.com/nm0i/tmww/
 
+Features include:
+
+user operations     FIXME popup notifier for logon/logoff events
+                    FIXME online list pretty printer
+                    user online activity logging and querying
+                    item/mob DB search/pretty printer
+server operations   querying character data from save files
+                    FIXME maplog/inventory item/trades search
+GM operations       FIXME hashed IPs collision lookup
+                    public GM log parser/stats
+                    alts DB maintenance
+
+Most operations are command-line based, provide flexible customization with
+configs, can be configured for multiple servers and have rich zsh completion:
+chars from online list, player aliases, item/mob names and much more.
+

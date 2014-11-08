@@ -37,6 +37,10 @@ ban/block over time. For reverse search use -p operation
 
     $ tmww crime -p bbb
 
+Example block stats:
+
+    $ wc -l $CRIMEPATH/records/blocks* | sed '$d' | bars
+
 Notes
 -----
 

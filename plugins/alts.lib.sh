@@ -506,7 +506,7 @@ aux_party_show_chars_by_party() {
 }
 
 aux_party_show_ids_by_party() {
-    aux_partydb_chars_by_party "$1" | while read charname; do
+    aux_party_show_chars_by_party "$1" | while read charname; do
         printf "%s %s\n" "$(func_char_get "$charname")" "$charname"
     done
 }
@@ -544,7 +544,7 @@ aux_party_show_chars_by_char() {
 }
 
 aux_party_show_ids_by_char() {
-    aux_partydb_chars_by_char "$1" | while read -r charname; do
+    aux_party_show_chars_by_char "$1" | while read -r charname; do
         printf "%s %s\n" "$(func_char_get "$charname")" "$charname"
     done
 }
