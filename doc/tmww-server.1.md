@@ -126,11 +126,15 @@ with possible header, "accs" which means lines from account.txt, "vars" -
 script variables per char/account.
 
 As with alts.plugin "char get" used for operations on char, "char show" - to
-get chars on accounts, "party show" - to get chars in same party and "player
+get chars on account, "party show" - to get chars in same party and "player
 show" to get all chars associated with player alias.
+
+More generally, "char get" also used to get strictly corresponding values like
+ID by login or mail and vice versa.
 
     char [ opts ] get { CHAR | [ skills | inventory | vars | id | char | accs | db | FIELD+ ]
         by { char CHAR | pcid PCID } }
+    char get { login | mail | id } by { login LOGIN | mail MAIL | id ID }
     char [ opts ] show { CHAR | [ parties | storage | vars | ids | chars | accs | db | FIELD+ ]
         by { char CHAR | id ID | pcid PCID } }
     party get { CHAR | by { char CHAR | pcid PCID } }
@@ -299,7 +303,7 @@ Example
 -------
 
     # show char mail
-    $ tcs accs login mail by char Cody
+    $ tcs login mail by char Cody
 
     # show player chars pcids and slot
     $ tps pcid slot by player laguna

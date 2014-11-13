@@ -20,9 +20,9 @@ v crime
 - suspect
                                                                           }}}
 ---- tmww: bugs --------------------------------------------------------- {{{
-- fix accsniffer empty party bug
 - review limited access policy since now it's possible to execute arbitrary code from config
 finished .............................. {{{
+v fix accsniffer empty party bug
 v bash/zsh compatibility rewrite (some constructions from dash don't work in them)
 v escape quotes in client versions for valid yaml in versionlog/versiontable
 v strict field matching with jq
@@ -119,6 +119,7 @@ n some output to access arrays (meaningful only for bot to wrap manaplus urls) >
                                                                           }}}
 ---- tmww: plugin: server ----------------------------------------------- {{{
 - add "char list with xx as yy", expr: [not] as|lt|gt|le|ge
+- add "char get id by login" and "char get login by id"
 finished .............................. {{{
 v crash tests
 v db/server completion

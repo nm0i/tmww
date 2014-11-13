@@ -242,37 +242,52 @@ _tmww_plugin_server_char_get() {
     _regex_arguments _cmd /$'[^\0]#\0'/ \
         \( \
             \( \
+                /$'(id|mail|login)\0'/ ":char:$_desc_char:(id mail login)" \
                 /$'by\0'/ ":char:$_desc_char:(by)" \
-            \| \
-                /$'(skills|inventory|vars|id|char|accs|db)\0'/ ":char:$_desc_char:(skills inventory vars id char accs db)" \
-                /$'by\0'/ ":char:$_desc_char:(by)" \
+                \( \
+                    /$'id\0'/ ":char:$_desc_char:(id)" \
+                    /$'[^\0]##\0'/ ":char:$_desc_arg_id:" \
+                \| \
+                    /$'mail\0'/ ":char:$_desc_char:(mail)" \
+                    /$'[^\0]##\0'/ ":char:mail:" \
+                \| \
+                    /$'login\0'/ ":char:$_desc_char:(login)" \
+                    /$'[^\0]##\0'/ ":char:login:" \
+                \) \
             \| \
                 \( \
-                    /$'([^\0]##\0~by\0)'/ ":fieldsdb:db fields:(${_tmww_server_fieldsdb})" \
+                    /$'by\0'/ ":char:$_desc_char:(by)" \
                 \| \
-                    /$'([^\0]##\0~by\0)'/ ":fieldsaccs:accs fields:(${_tmww_server_fieldsaccs})" \
+                    /$'(skills|inventory|vars|id|char|accs|db|pcid)\0'/ ":char:$_desc_char:(skills inventory vars id char accs db pcid)" \
+                    /$'by\0'/ ":char:$_desc_char:(by)" \
                 \| \
-                    /$'([^\0]##\0~by\0)'/ ":fieldsreg:reg fields:(${_tmww_server_fieldsreg})" \
-                \| \
-                    /$'([^\0]##\0~by\0)'/ ":fieldsalias:fields aliases:(${_tmww_server_serverfieldsalias})" \
-                \| \
-                    /$'([^\0]##\0~by\0)'/ ":fieldsdb:db fields from default config:(${_tmww_server_config_fieldsdb})" \
-                \| \
-                    /$'([^\0]##\0~by\0)'/ ":fieldsaccs:accs fields from default config:(${_tmww_server_config_fieldsaccs})" \
-                \| \
-                    /$'([^\0]##\0~by\0)'/ ":fieldsreg:reg fields from default config:(${_tmww_server_config_fieldsreg})" \
-                \| \
-                    /$'([^\0]##\0~by\0)'/ ":fieldsalias:fields aliases from default config:(${_tmww_server_config_serverfieldsalias})" \
+                    \( \
+                        /$'([^\0]##\0~by\0)'/ ":fieldsdb:db fields:(${_tmww_server_fieldsdb})" \
+                    \| \
+                        /$'([^\0]##\0~by\0)'/ ":fieldsaccs:accs fields:(${_tmww_server_fieldsaccs})" \
+                    \| \
+                        /$'([^\0]##\0~by\0)'/ ":fieldsreg:reg fields:(${_tmww_server_fieldsreg})" \
+                    \| \
+                        /$'([^\0]##\0~by\0)'/ ":fieldsalias:fields aliases:(${_tmww_server_serverfieldsalias})" \
+                    \| \
+                        /$'([^\0]##\0~by\0)'/ ":fieldsdb:db fields from default config:(${_tmww_server_config_fieldsdb})" \
+                    \| \
+                        /$'([^\0]##\0~by\0)'/ ":fieldsaccs:accs fields from default config:(${_tmww_server_config_fieldsaccs})" \
+                    \| \
+                        /$'([^\0]##\0~by\0)'/ ":fieldsreg:reg fields from default config:(${_tmww_server_config_fieldsreg})" \
+                    \| \
+                        /$'([^\0]##\0~by\0)'/ ":fieldsalias:fields aliases from default config:(${_tmww_server_config_serverfieldsalias})" \
+                    \) \
+                    \# \
+                    /$'by\0'/ ":char:$_desc_char:(by)" \
                 \) \
-                \# \
-                /$'by\0'/ ":char:$_desc_char:(by)" \
-            \) \
-            \( \
-                /$'pcid\0'/ ":char:$_desc_char:(pcid)" \
-                /$'[^\0]##\0'/ ":char:$_desc_arg_pcid:" \
-            \| \
-                /$'char\0'/ ":char:$_desc_char:(char)" \
-                /$'[^\0]##\0'/ ':char: :_tmww_arg_chars' \
+                \( \
+                    /$'pcid\0'/ ":char:$_desc_char:(pcid)" \
+                    /$'[^\0]##\0'/ ":char:$_desc_arg_pcid:" \
+                \| \
+                    /$'char\0'/ ":char:$_desc_char:(char)" \
+                    /$'[^\0]##\0'/ ':char: :_tmww_arg_chars' \
+                \) \
             \) \
         \| \
             /$'[^\0]##\0'/ ':char: :_tmww_arg_chars' \

@@ -30,7 +30,9 @@ tests:
 #	@LC_ALL=C PATH="./bin:${PATH}" build-aux/shtest -E 'DIRCONFIG="tests/local/conf"' tests/local/*.t
 
 changelog:
-	@build-aux/gitlog-to-changelog --format="%h %s" | grep -v 'fix$$' | tr -s '\n' > ChangeLog
+	@git log --format="%ci %an <%ae>%n          %h %s" | cut -d ' ' -f 1,4- | \
+	    awk '/fix$$/{next}/^ /{if (a){print a};print;next}{if ($$0 != a) a=$$0; else a=""}' \
+	    > ChangeLog
 
 # upgrade configs, clear completion cache, upgrade completion code
 multiuser:

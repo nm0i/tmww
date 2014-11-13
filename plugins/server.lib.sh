@@ -71,6 +71,10 @@ fieldsdb='1 1 pcid
 19 1- fvars
 '
 
+# NOTE: these numbers are used in field-based output
+#       number of operations like "char get login by mail"
+#       have their values hardcoded
+#       change those if fields order in ACCS DB changes
 fieldsaccs='2 login
 3 hash
 4 date
@@ -663,6 +667,32 @@ aux_char_get_vars_by_char() {
     printf "%s" "${prepared_db}" | cut -f 19 | tr ' ' '\n'
 }
 
+aux_char_get_mail_by_id() {
+    grep -m 1 "^$1" "${TMWW_SERVERACCS}" | cut -f 8
+}
+
+aux_char_get_login_by_id() {
+    grep -m 1 "^$1" "${TMWW_SERVERACCS}" | cut -f 2
+}
+
+aux_char_get_id_by_mail() {
+    prepmail=$(printf "%s" "$1" | sed 's/\\/\\\\/g' )
+    ${AWK} -F '\t' -v mail="${prepmail}" '$8==mail{print $1; exit}' "${TMWW_SERVERACCS}"
+}
+
+aux_char_get_login_by_mail() {
+    prepmail=$(printf "%s" "$1" | sed 's/\\/\\\\/g' )
+    ${AWK} -F '\t' -v mail="${prepmail}" '$8==mail{print $2; exit}' "${TMWW_SERVERACCS}"
+}
+
+aux_char_get_id_by_login() {
+    egrep -m 1 "^${field}$1" "${TMWW_SERVERACCS}" | cut -f 1
+}
+
+aux_char_get_mail_by_login() {
+    egrep -m 1 "^${field}$1" "${TMWW_SERVERACCS}" | cut -f 8
+}
+
 func_char_get() {
     local output_format criterion
     [ -z "$2" -a -n "$1" ] && {
@@ -677,6 +707,8 @@ func_char_get() {
                 output_format="inventory"
                 shift
                 ;;
+            login)      output_format="login"; shift ;;
+            mail)       output_format="mail"; shift ;;
             id)         output_format="id"; shift ;;
             pcid)       output_format="pcid"; shift ;;
             char)       output_format="char"; shift ;;
@@ -698,9 +730,33 @@ func_char_get() {
     [ -z "$2" ] && { error_missing; return 1; }
     criterion="$1"; shift
     [ -n "$2" ] && { error_toomuch; return 1; }
+    bad_format() { error "Incompatible query format!"; }
     case "${criterion}" in
-        char)   : ;;
-        pcid)   check_pcid "$1" || return 1 ;;
+        char)   case "${output_format}" in
+                    login|mail|id) bad_format; return 1; ;;
+                    *) : ;;
+                esac
+                ;;
+        pcid)   case "${output_format}" in
+                    login|mail|id) bad_format; return 1; ;;
+                    *) : ;;
+                esac
+                check_pcid "$1" || return 1 ;;
+        login)  case "${output_format}" in
+                    id|mail) : ;;
+                    *) bad_format; return 1; ;;
+                esac
+                ;;
+        mail)   case "${output_format}" in
+                    id|login) : ;;
+                    *) bad_format; return 1; ;;
+                esac
+                ;;
+        id)     case "${output_format}" in
+                    mail|login) : ;;
+                    *) bad_format; return 1; ;;
+                esac
+                check_id "$1" || return 1; ;;
         *)      error_incorrect; return 1; ;;
     esac
     eval aux_char_get_${output_format}_by_${criterion} \"\$@\"

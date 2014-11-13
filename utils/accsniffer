@@ -7,6 +7,10 @@
 #
 # IMPORTANT: sniffer assumes mapserver is on same IP as login server
 #
+# IMPORTANT: sniffer captures only separate payloads of 0x095 followed by
+#            0x0195 packets and will miss all IDs in crowded places
+#            use pysniffer instead
+#
 # despite accsniffer provides ghetto circular cache
 # better option would be obviously doubly linked list
 #
@@ -79,34 +83,22 @@ cachelimit=50
                     system("tmww -ya alts " config " char resolve " add_char)
                 }
 
-                check = substr($0,109,2)
-                if ( check != "" && check != "00" ) {
-                    # offset 32
-                    id1 = substr($0,97,2)
-                    id2 = substr($0,100,2)
-                    id3 = substr($0,103,2)
-                    id4 = substr($0,106,2)
-                    checkid = int("0x" id4 id3 id2 id1)
-                    if ( checkid == accid ) {
-                        # offset 36, length 23
-                        party = substr($0,109,68)
-
-                        # awk is a mess for chr/ord single/multibyte
-                        # dirty fix (not sure if its because character leaves party)
-                        # there are still lot of fails; FIXME check protocol to fix
-                        if ( substr(party,0,2) != "96" ) {
-                            decoded_party = decode(party)
-                        
-                            # cache party
-                            if ( push(decoded_party decoded_char, npcache, pcache) ) {
-                            
-                                # action
-                                gsub("'\''","'\''\"'\''\"'\''",decoded_party)
-                                add_party = sprintf ("party '\''%s'\'' char '\''%s'\''", decoded_party, decoded_name)
-                                # print add_party
-                                system("tmww -ya alts " config " party add " add_party)
-                            }
-                        }
+                # check if next following packet is 0x0195 - party name
+                # offset 30
+                check = substr($0,91,5)
+                if ( check != "" && check == "95 01" ) {
+                    # offset 36, length 23
+                    party = substr($0,109,68)
+                    decoded_party = decode(party)
+                
+                    # cache party
+                    if ( push(decoded_party decoded_char, npcache, pcache) ) {
+                    
+                        # action
+                        gsub("'\''","'\''\"'\''\"'\''",decoded_party)
+                        add_party = sprintf ("party '\''%s'\'' char '\''%s'\''", decoded_party, decoded_name)
+                        # print add_party
+                        system("tmww -ya alts " config " party add " add_party)
                     }
                 }
             }
