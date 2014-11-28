@@ -62,8 +62,8 @@ Example
     # cache whole login server log for all currently known player entries
     $ tmww ip domains -f 2013-01-01 -t 2014-01-01 -w 2013
 
-    # output collision domain
-    $ tmww ip domains -r 2013 -p frost
+    # output collision domain (filter logins from defined file)
+    $ TMWW_SERVERLOGINLOG=localtemp.log tmww ip domains -p frost
 
     # output non-associated chars with their ids
     $ tmww ip domains -r 2013 -p frost -n
