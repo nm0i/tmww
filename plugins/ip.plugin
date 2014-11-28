@@ -223,7 +223,7 @@ if [ -z "${ip_subcommand}" ]; then
         if [ -n "${lookup_method}" ]; then
             case "${lookup_method}" in
                 u)  jq -c -r '.ids[], .nids[]' 2>/dev/null ;;
-                n)  jq -c -r '.ids[]' 2>/dev/null ;;
+                n)  jq -c -r '.nids[]' 2>/dev/null ;;
             esac | while read line; do
                 aux_char_show_ids_by_id "${line}"
             done
