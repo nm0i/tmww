@@ -1,0 +1,172 @@
+#!/bin/sh
+# mbuzzer - bot suit notification interface
+
+# FIXME
+# can't get socat to work properly
+# faulty
+# $ ( socat 'unix-listen:test.sock,reuseaddr,fork' - | while read line; do echo 123 $line; done )&
+# $ for i in $(seq 1 10); do echo $i; sleep 1; done | socat - 'unix-connect:test.sock'
+# desired
+# $ socat 'unix-listen:test.sock,reuseaddr,fork' - | while read line; do echo 123 $line; done
+# $ for i in $(seq 1 10); do echo $i; sleep 1; done | socat - 'unix-connect:test.sock'
+
+CONFIGPATH="${HOME}/.config/manacore"
+PIDFILE="${CONFIGPATH}/pid/mbuzzer.pid"
+MBSOCKET="${CONFIGPATH}/ipc/mbuzzer.socket"
+SOUNDPATH="${HOME}/.sound/event"
+
+# see mbuzzer man page for example of ALSA asoundrc config
+audiodev="manavol"
+festlang="british"
+playbin="play -q"
+notify_agent="/usr/bin/notify-send -t 2000 %t %b"
+notify_display="DISPLAY=:0"
+
+help() {
+cat << EOF
+mbuzzer -- bot suit notification interface
+    -t STRING   -- send event of STRING type
+    -f FILE     -- send file as event
+    -b STRING   -- send speach to festival
+    -i          -- ignore abandoned socket
+    -n STRING   -- send notification string
+    { start | status | stop } -- operate listening server
+EOF
+}
+
+error() { echo >&2 $* ; }
+errcmd() { error "Incorrect command line" ; help; exit 1; }
+
+check_jq() {
+    if ! command -v jq >/dev/null 2>&1; then
+        error "jq (JSON parser) not found"; exit 1
+    fi
+}
+
+ignore_socket=
+OPTIND=1
+while getopts ht:f:n:b: opt; do
+    case "${opt}" in
+        h)  help; exit 0 ;;
+        i)  ignore_socket=1 ;;
+        t)  echo "{\"msg\":\"snd\",\"type\":\"${OPTARG}\"}" |
+                socat - "unix-connect:${MBSOCKET}" 2>/dev/null
+            return 0 ;;
+        f)  echo "{\"msg\":\"snd\",\"file\":\"${OPTARG}\"}" |
+                socat - "unix-connect:${MBSOCKET}" 2>/dev/null
+            return 0 ;;
+        n)  echo {} | jq -c -M --arg text "${OPTARG}" '.+{"text":$text,"msg":"ntf"}' |
+                socat - "unix-connect:${MBSOCKET}" 2>/dev/null
+            return 0 ;;
+        b)  echo {} | jq -c -M --arg text "${OPTARG}" '.+{"text":$text,"msg":"snd"}' |
+                socat - "unix-connect:${MBSOCKET}" 2>/dev/null
+            return 0 ;;
+        *)  errcmd ;;
+    esac
+done
+
+shift $(( ${OPTIND} - 1 ))
+
+status() {
+    if [ -f "${PIDFILE}" ]; then
+        read pgid < "${PIDFILE}"
+        if ps -${pgid} >/dev/null 2>&1 ; then
+            error "Server is running"
+        else
+            error "Server crashed. Restart manually!"
+        fi
+        return 1
+    fi
+}
+
+[ -n "$2" -o -z "$1" ] && errcmd
+case "$1" in
+    start)
+        check_jq
+        if status; then
+            if [ -f "${MBSOCKET}" ]; then
+                if [ -z "${ignore_socket}" ]; then
+                    error "Remove abandoned socket file ${MBSOCKET} or use -i flag"
+                    return 1
+                else
+                    rm "${MBSOCKET}"
+                fi
+            fi
+            (
+                sleep 1
+                socat "unix-listen:${MBSOCKET},reuseaddr,fork" - | { while read line; do
+                    target=
+                    title=
+                    case "${line}" in
+                        *\"msg\":\"snd\"*)
+                            case "${line}" in
+                                *\"type\":*)
+                                    target="${SOUNDPATH}/"$(printf "%s\n" "${line}" |
+                                        jq -c -M -r '.type | if (type|. == "string")
+                                            then . else empty end' 2>/dev/null )
+                                    if [ -n "${target}" ]; then
+                                        eval ${audiodev:+AUDIODEV=${audiodev}} ${playbin} \
+                                            \"${target}\" >/dev/null 2>&1 &
+                                    fi
+                                    ;;
+                                *\"file\":*)
+                                    target=$(printf "%s\n" "${line}" |
+                                        jq -c -M -r '.file | if (type|. == "string")
+                                            then . else empty end' 2>/dev/null )
+                                    if [ -n "${target}" ]; then
+                                        eval ${audiodev:+AUDIODEV=${audiodev}} ${playbin} \
+                                            \"${target}\" >/dev/null 2>&1 &
+                                    fi
+                                    ;;
+                                *\"text\":*)
+                                    target=$( printf "%s\n" "${line}" | jq -c -M -r '.text | if (type|.=="string")
+                                        then . else empty end' 2>/dev/null )
+                                    if [ -n "${target}" ]; then
+                                        printf "%s\n" "${target}" | festival --language "${festlang}" --tts
+                                    fi
+                                    ;;
+                            esac
+                            ;;
+                        *\"msg\":\"ntf\"*)
+                            title=$( printf "%s\n" "${line}" | jq -c -M -r '.title | if (type|. == "string")
+                                then . else empty end' 2>/dev/null |
+                                sed "s/'/'\"'\"'/g;s|[\/&]|\\\\&|g;s/$/\\\\/" )
+                            target=$( printf "%s\n" "${line}" | jq -c -M -r '.text | if (type|. == "string")
+                                then . else empty end' 2>/dev/null |
+                                sed "s/'/'\"'\"'/g;s|[\/&]|\\\\&|g;s/$/\\\\/" )
+                            if [ -n "${target}" ]; then
+                                nfagent=$( printf "%s\n" "${notify_agent}" | \
+                                    sed "s/%t/'${title:-TMW sWatcher}'/;s/%b/'${target}'/" )
+                                eval "${notify_display}" "${nfagent}" >/dev/null 2>&1
+                            fi
+                            ;;
+                    esac
+                done }
+            ) >/dev/null 2>&1 &
+            pgid=$( ps -o pgid= $! )
+            if [ -z "${pgid}" ]; then
+                error "Run failed"
+            else
+                printf "%s\n" "${pgid}" > "${PIDFILE}"
+            fi
+        else
+            return 1
+        fi
+        ;;
+    stop)
+        if [ -f "${PIDFILE}" ]; then
+            read pgid < "${PIDFILE}"
+            if kill -- -${pgid} >/dev/null 2>&1; then
+                rm -f "${PIDFILE}" # "${SOUNDSOCKET}"
+            else
+                error "Can't kill pgid ${pid}; remove socket and pid file ${PIDFILE} manually"
+            fi
+        fi
+        ;;
+    status)
+        status && error "No server running"
+        :
+        ;;
+    *)  errcmd ;;
+esac
+

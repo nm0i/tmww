@@ -47,9 +47,9 @@ Usage
 Config
 ------
 
-MAPLOGPATH : string -> $SERVERPATH/world/map/log 
+MAPLOGPATH : string : $SERVERPATH/world/map/log 
     location of map logs
-MAPLOGSHIFT : int -> 1024
+MAPLOGSHIFT : int : 1024
     shift of timestamp in maplog name. Default name format is: map.log.TIMESTAMP.gz
 
 Example

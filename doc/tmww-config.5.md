@@ -39,50 +39,64 @@ respective plugin manuals.
 Config
 ------
 
-LINK : quoted -> http://server.themanaworld.org/online.html  
+LINK : quoted : http://server.themanaworld.org/online.html  
     html/txt online list link
-LOCALLINK : string -> _empty_  
+LOCALLINK : string : _empty_  
     local tmwa online list
-SERVERNAME : string -> server.themanaworld.org  
+SERVERNAME : string : server.themanaworld.org  
     defines _$servername_; if skipped, _$servername_ is cut from _$LINK_
-CHARNAME : string -> _empty_  
-    character name for plugins making use of it
-INSTANCE : string -> common  
+ROLE : string : main  
+    role value for plugins making use of it
+INSTANCE : string : common  
     see instances explanation
-DELTA : int -> 16  
+DELTA : int : 16  
     delay in seconds from last download of online list allowed to skip update;
     see _Instances_ for comment on running multiple instances
-DRYRUN : yes/no -> no  
+DRYRUN : yes/no : no  
     see _Dryrun_ comment
-CMDACTION : string -> _empty_  
+CMDACTION : string : _empty_  
     pass cmdline arguments to defined CMDACTION plugin and skip _actions_ section
-CMDPREFIX : string -> _empty_  
+CMDPREFIX : string : _empty_  
     prefix cmdline options passed to plugin called from commandline
-VERBOSE : yes/no -> no  
+VERBOSE : yes/no : no  
     output executed plugins names and error codes
-PLUGINPATH : string -> ~/.config/tmww/plugins  
+PLUGINPATH : string : ~/.config/tmww/plugins  
     neat tmww features
-UTILPATH : string -> ~/.config/tmww/utils  
+UTILPATH : string : ~/.config/tmww/utils  
     exterior applications/scripts used by plugins
-TMP : string -> /tmp  
+TMP : string : /tmp  
     see notes on TMP
-PRIVTMP : string -> ~/.tmp  
+PRIVTMP : string : ~/.tmp  
     see notes on PRIVTMP
-LISTPATH : string -> ~/.config/tmww/lists  
+LOCK : string : /var/lock  
+    lock/PID files
+LISTPATH : string : ~/.config/tmww/lists  
     player lists with _$servername_ subfolder
-HIGHLIGHT : yes/no -> no  
+HIGHLIGHT : yes/no : no  
     highlight service messages like 'fetching!', 'servertime' and such (works for 'watch' program)
-ANSICAPABLE : yes/no -> no  
+ANSICAPABLE : yes/no : no  
     see notes on colors
-COLORS : yes/no -> yes  
+COLORS : yes/no : yes  
     use colors
-RING : yes/no -> no  
-    play sound on matched event
-PLAY : quoted -> /usr/bin/play  
-    binary to play sound available with shell PATH and options
-PLAYPATH : string -> ~/.sound  
-    default sounds path
-INCLUDE : string -> _empty_  
+IPCPATH : string : $PRIVTMP/ipc  
+    miscellineous UDS/FIFO path (see plugins for details)
+RING : yes/no : no  
+    play sound on "ring" action (and matched event)
+PLAY : quoted : "play -q"  
+    binary to play sound
+PLAYDEV : string : _empty_  
+    ALSA device pass with as environment variable to PLAY bin
+RINGSOCKET : yes/no : no  
+    write mbuzzer events to socket instead of playing with _PLAY_
+RINGSOCKETFILE : string : $IPCPATH/mbuzzer.socket  
+    mbuzzer UDS file
+RINGPATH : string : ~/.sound/event  
+    default event sounds path
+RINGFESTLANG : string : "english"
+    festival language
+LISTINSTALL : string : no
+    default list action (compile if "no", install if "yes"; see tmww-list(7) )
+INCLUDE : string : _empty_  
     include other config; see INCLUDE description
 
 Sections
@@ -105,11 +119,14 @@ loggedon    print players logged on
 loggedoff   print players logged off
 newline     print newline
 ring        use default ring
+trigger     execute custom commands for logon/logoff events from "trigger" section
 external    special word forging action command line and passing it to external executable
 event       same as external but only when logon/logoff detected
 script      execute script embedded inside section
 
-_ring_ calls _PLAY_ command with argument from _event_ section on matched event.
+_ring_ calls _PLAY_ command with argument from _event_ section on matched
+event. If _RINGSOCKET_ set to "yes", tmww will send JSON line using mbuzzer
+util; see tmww-mbuzzer(1) .
 
 _external_ command passes arguments to external application.
 
@@ -126,16 +143,29 @@ available. See man section "Script".
 
 .Section "event"
 
-    all { on | off } _sound_
-    _list_ { on | off } _sound_
-    pattern _regexp_ { on | off } _sound_
+    all { on | off } { event | file | festival } STRING
+    list LIST { on | off } { event | file | festival } STRING
+    pattern REGEXP { on | off } { event | file | festival } STRING
 
 Rules for RING action. Only last matched event will be played.
 
-Pattern match char names. Lists are taken from LISTPATH and are simple charname
-per line (comments allowed).
+Pattern match char names with extended regexp. Lists are taken from LISTPATH,
+see tmww-list(7) . "event" matters more with _RINGSOCKET_ var set to "yes"
+(event sound symlinks are taken from _RINGPATH_ ). "festival" will send
+following data as stdin for festival --tts.
 
-This section is empty by default.
+Comments starting with "#" are allowed. This section is empty by default.
+
+.Section "trigger"
+
+    all { on | off } COMMAND
+    list LIST { on | off } COMMAND
+    pattern REGEXP { on | off } COMMAND
+
+Commands to be called on respective logon/logoff event; e.g. bot launcher
+commands (as simple monitor). All lines are checked (except commented lines).
+
+Comments starting with "#" are allowed. This section is empty by default.
 
 .Section "overload"
 
@@ -204,5 +234,5 @@ TEMPLATE(AUTHORS)
 
 See also
 --------
-tmww(1), tmww-plugin(7)
+tmww(1), tmww-plugin(7), tmww-mbuzzer(1)
 

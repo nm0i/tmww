@@ -126,6 +126,7 @@ server_parse_char () {
     server_cut_fields=''; server_suffix=''; server_raw_fields=''
     aux_server_opts "$@"
     shift $( expr $OPTIND - 1 )
+    [ -z "$1" ] && { error_missing; return 1; }
     subcommand="$1"; shift
     case "${subcommand}" in
         # case insensitive grep; regexps allowed
@@ -138,7 +139,6 @@ server_parse_char () {
         dig)    func_char_dig "$@" ;;
         show)   func_char_show "$@" ;;
         summary) func_char_summary "$@" ;;
-        '') error_missing; return 1; ;;
         *) error_incorrect; return 1; ;;
     esac
 }
@@ -154,6 +154,7 @@ server_parse_party () {
     server_cut_fields=''; server_suffix=''; server_raw_fields=''
     aux_server_opts "$@"
     shift $( expr $OPTIND - 1 )
+    [ -z "$1" ] && { error_missing; return 1; }
     subcommand="$1"; shift
     case "${subcommand}" in
         # case insensitive grep; regexps allowed
@@ -165,7 +166,6 @@ server_parse_party () {
         dig)    func_party_dig "$@" ;;
         get)    func_party_get "$@" ;;
         show)   func_party_show "$@" ;;
-        '') error_missing; return 1; ;;
         *) error_incorrect; return 1; ;;
     esac
 }
@@ -181,6 +181,7 @@ server_parse_player () {
     server_cut_fields=''; server_suffix=''; server_raw_fields=''
     aux_server_opts "$@"
     shift $( expr $OPTIND - 1 )
+    [ -z "$1" ] && { error_missing; return 1; }
     subcommand="$1"; shift
     case "${subcommand}" in
         ref)    func_player_ref "$@" ;;
@@ -226,7 +227,6 @@ server_parse_player () {
             echo TODO merge handler
             # func_player_merge "$@"
             ;;
-        '') error_missing; return 1; ;;
         *) error_incorrect; return 1; ;;
     esac
 }
@@ -239,6 +239,7 @@ server_parse_player () {
 server_main_parser() {
     local subcommand
     OPTIND=1
+    [ -z "$1" ] && { error_missing; return 1; }
     subcommand="$1"; shift
     case "${subcommand}" in 
         char)       server_parse_char "$@" ;;
@@ -248,7 +249,6 @@ server_main_parser() {
         arseoscope) func_arseoscope "$@" ;;
         # dump compiled fields
         ref)        func_server_ref "$@" ;;
-        '')         error_missing; return 1 ;;
         *)          error_incorrect; return 1 ;;
     esac
 }

@@ -27,6 +27,7 @@ Options
 -r  override RING; set to "yes"
 -s  override RING; set to "no"
 -y  override DRYRUN; set to "yes"
+-f  override DRYRUN (set to "no") and run "fetch" action before anything else
 -a ACTION  
     override CMDACTION;
     options -h and -v after specified action will display help/version for this action
@@ -113,7 +114,8 @@ Default shipping contains example raw online lists.
 
 DRYRUN config option will prevent online list fetching and modification of
 logon/logoff lists generated from online list copy referenced by INSTANCE
-variable.
+variable; in other words DRYRUN prevents "fetch" action (this action is
+responsible for logon/logoff lists generation, backuping and so on).
 
 Use cases:
 
@@ -121,19 +123,22 @@ Use cases:
   "tmww watch" instance with different settings but not corrupting main
   logon/logoff reporting.
 - debug case: dry run will not fetch online list every time you fire tmww
-  instance
+  instance and will not touch logon/logoff lists
 - some plugins only reuse path settings from config and require no online list
   at all
 
 NOTE: DRYRUN may not be supported by plugins fetching additional data on each
       run
 
+Opposite to -y option -f will force "fetch" action before any other action take
+place.
+
 .Dependencies
 
 Plugins may define other recommended plugins or dependency plugins. Conflicts
-are not resolved automatically. All warning/info messages are displayed with
-plugin help or as info lines with _DEBUG_ option "on". No plugin version
-checked.
+are not resolved automatically. No warnings with conflicting plugins are
+displayed. No plugin version checked. All potentially conflicting plugins
+should be resolved by hand - not running them simultaneously/on common target.
 
 Example of conflicting plugins: versions and log. Both will duplicate
 logon/logoff events and have possibility of simultaneous write to log.

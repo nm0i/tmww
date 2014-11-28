@@ -31,9 +31,9 @@ Version summary html tables stay at log path and are not deleted.
 
 Config
 ------
-VERSIONLINK : quoted -> http://updates.themanaworld.org/versions.php  
+VERSIONLINK : quoted : http://updates.themanaworld.org/versions.php  
     link to download versions summary table
-VERSIONREPORT : string -> ~/log/tmww  
+VERSIONREPORT : string : ~/log/tmww  
     result version log location (same as for tmww log plugin)
 
 Example

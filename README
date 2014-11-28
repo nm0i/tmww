@@ -14,7 +14,7 @@ https://github.com/nm0i/tmww/
 
 Features include:
 
-user operations     FIXME popup notifier for logon/logoff events
+user operations     popup notifier for logon/logoff events
                     FIXME online list pretty printer
                     user online activity logging and querying
                     item/mob DB search/pretty printer

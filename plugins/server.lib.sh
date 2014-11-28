@@ -733,12 +733,12 @@ func_char_get() {
     bad_format() { error "Incompatible query format!"; }
     case "${criterion}" in
         char)   case "${output_format}" in
-                    login|mail|id) bad_format; return 1; ;;
+                    login|mail) bad_format; return 1; ;;
                     *) : ;;
                 esac
                 ;;
         pcid)   case "${output_format}" in
-                    login|mail|id) bad_format; return 1; ;;
+                    login|mail) bad_format; return 1; ;;
                     *) : ;;
                 esac
                 check_pcid "$1" || return 1 ;;

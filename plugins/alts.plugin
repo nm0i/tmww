@@ -92,6 +92,7 @@ requireplugin alts.lib.sh || return 1
 
 alts_parse_char () {
     local subcommand
+    [ -z "$1" ] && { error_missing; return 1; }
     subcommand="$1"; shift
     case "${subcommand}" in
         add)    func_char_add "$@" ;;
@@ -108,7 +109,6 @@ alts_parse_char () {
         show)   func_char_show "$@" ;;
         sanitize) func_char_sanitize "$@" ;;
         merge)  func_char_merge "$@" ;;
-        '')     error_missing; return 1; ;;
         *)      error_incorrect; return 1; ;;
     esac
 }
@@ -120,6 +120,7 @@ alts_parse_char () {
 
 alts_parse_party () {
     local subcommand
+    [ -z "$1" ] && { error_missing; return 1; }
     subcommand="$1"; shift
     case "${subcommand}" in
         add)    func_party_add "$@" ;;
@@ -135,7 +136,6 @@ alts_parse_party () {
         show)   func_party_show "$@" ;;
         sanitize) func_party_sanitize "$@" ;;
         merge)  func_party_merge "$@" ;;
-        '')     error_missing; return 1; ;;
         *)      error_incorrect; return 1; ;;
     esac
 }
@@ -147,6 +147,7 @@ alts_parse_party () {
 
 alts_parse_player () {
     local subcommand
+    [ -z "$1" ] && { error_missing; return 1; }
     subcommand="$1"; shift
     case "${subcommand}" in
         ref)    func_player_ref "$@" ;;
@@ -199,7 +200,6 @@ alts_parse_player () {
             echo TODO merge handler
             # func_player_merge "$@"
             ;;
-        '') error_missing; return 1; ;;
         *) error_incorrect; return 1; ;;
     esac
 }
@@ -211,13 +211,13 @@ alts_parse_player () {
 
 alts_main_parser() {
     local subcommand
+    [ -z "$1" ] && { error_missing; return 1; }
     subcommand="$1"; shift
     case "${subcommand}" in 
         char)       alts_parse_char "$@" ;;
         party)      alts_parse_party "$@" ;;
         player)     alts_parse_player "$@" ;;
         arseoscope) func_arseoscope "$@" ;;
-        '')         error_missing; return 1 ;;
         *)          error_incorrect; return 1 ;;
     esac
 }

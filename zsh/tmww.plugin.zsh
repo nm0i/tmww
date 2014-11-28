@@ -39,7 +39,7 @@ eval _opt_tmww_pluginpath="${_opt_tmww_pluginpath:-${_opt_tmww_DIRCONFIG}/plugin
 #            2) if failed - set to default location
 #            change this variable if you have shared tmp in different location
 _opt_tmww_sharedtmp=$( tmww -ug TMP )
-eval _opt_tmww_sharedtmp="${_opt_tmww_sharedtmp:-/tmp}"
+eval _opt_tmww_sharedtmp="${_opt_tmww_sharedtmp:-/tmp}/tmww"
 #_tmww_debug sharedtmp ${_opt_tmww_sharedtmp}
 
 _desc_arg_string="string"

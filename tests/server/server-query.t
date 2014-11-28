@@ -24,7 +24,7 @@ regular tests
     2000000
     $ tmww char get by id mage
     ? 1
-    Incorrect parameter: get by id mage
+    Incompatible query format!
     $ tmww char get accs by char mage
     accid    login   hash                             date                     g  counter  ?  mail     ?  ?  lastip     ?  ?
     2000000  newbie  !Ms^6_$3749dfee1445abfa06907413  2014-09-29 21:42:23.044  M  98       0  a@a.com  -  0  127.0.0.1  !  0

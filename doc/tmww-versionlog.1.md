@@ -43,13 +43,13 @@ stay at logpath and are not deleted.
 Config
 ------
 
-VERSIONURLBASE : quoted -> http://updates.themanaworld.org/version/  
+VERSIONURLBASE : quoted : http://updates.themanaworld.org/version/  
     url path where logs are stored
-VERSIONREPORT : string -> ~/log/tmww  
+VERSIONREPORT : string : ~/log/tmww  
     result version log location (same as for tmww log plugin)
-VERSIONCACHE : string -> ~/log/versions  
+VERSIONCACHE : string : ~/log/versions  
     destination for downloaded version log files
-VERSIONSUMMARY : yes/no | _empty_  
+VERSIONSUMMARY : yes/no : _empty_  
     if _yes_ - print summary of versions like result from versiontable plugin
 
 Example

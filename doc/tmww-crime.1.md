@@ -22,7 +22,7 @@ Options
 Config
 ------
 
-CRIMEPATH : string -> $HOME/log/gm/$servername
+CRIMEPATH : string : $HOME/log/gm/$servername
     path to GM logs and parsed files
 
 Example
@@ -46,6 +46,22 @@ Notes
 
 Delete $CRIMEPATH/dbupdate/* files with -c option to make fresh upgrade to
 player db.
+
+Files
+-----
+
+CRIMEPATH/gm.log.YYYY-MM  
+    downloaded public GM log
+CRIMEPATH/messages/messages.YYYY-MM  
+    parsed messages for each log
+CRIMEPATH/records/allbanned  
+    all banned nicks, sorted, unique
+CRIMEPATH/records/allblocked  
+    all blocked nicks, sorted, unique
+CRIMPATH/records/bans.YYYY-MM  
+    relevant log lines, excluding +5mn bans (caretaker's wife)
+CRIMEPATH/records/blocks.YYYY-MM  
+    relevant log lines
 
 Bugs
 ----

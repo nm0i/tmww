@@ -14,10 +14,13 @@ v activity
 v server
 v db
 v crime
+v notify
+v mbuzzer
+v ip
+. haship
+. ping
 . maplog
 . watch
-- notify
-- suspect
                                                                           }}}
 ---- tmww: bugs --------------------------------------------------------- {{{
 - review limited access policy since now it's possible to execute arbitrary code from config
@@ -36,6 +39,7 @@ n "detected czemu ... tt" - fix questions in names >> cannot reproduce
 - debian packaging
 - split shtest
 - split md2man
+- change md2man definition list from multiple spaces to colon; replace it in all docs
 finished .............................. {{{
 v attach gnulib build-aux/gitlog-to-changelog as ChangeLog generator
 n single user deploy concerning distributed package/example files -- cancelled, added multiuser upgrade
@@ -151,6 +155,7 @@ v function spot: see if player is under known alts online
                                                                           }}}
 ---- tmww: documentation ------------------------------------------------ {{{
 - simple guide
+- add note on new alsa device to tmww-conf
 finished .............................. {{{
 v md2man fix singleline paragraph/blankline issue
 v add note to clean variables in script action after runaction

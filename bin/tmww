@@ -2,7 +2,7 @@
 # tmww -- monitor/fetch themanaworld online player list. Misc functions via plugins
 # http://themanaworld.org/
 # GPL 3, 2011-2014, willee
-VERSION="0.2.2"
+VERSION="1.0.0"
 
 DIRCONFIG="${DIRCONFIG:-${HOME}/.config/tmww}"
 # see store_shared function for details
@@ -27,8 +27,6 @@ ESED="-r"
 # ESED="-e"
 # watch v0.3.0 from procps require ANSICAPABLE=no
 ANSICAPABLE="no"
-# tmwa character names are case insensitive, change NAMEGREP other way
-NAMEGREP="/bin/egrep -i"
 
 # remember of manual tilde expansion for custom variables
 # with "eval TMWW_VAR=${TMWW_VAR:-${sane}/defaults}"
@@ -41,12 +39,12 @@ help () {
         cat << EOF
 tmww -- The Mana World Watcher script
     version ${VERSION}
-    willee, 2012-2014, licensed under GPL v3
+    willee, 2011-2014, licensed under GPL v3
 
 tmww [-vhpecbrsy] [-a action] [-d delta] [config [action options]]
     -v -- print version and exit
     -h -- print command line options help and exit
-    -p -- list available plugins, conflicting plugins, recommentations and exit
+    -p -- list available plugins and exit
     -g -- output config variable; e.g. "TMWW_PLUGINPATH=test tmww -g PLUGINPATH"
     -u -- disallow reusing external variables, e.g. "TMWW_PLUGINPATH=test tmww -ug PLUGINPATH"
     -z -- dump aliases from zsh completions
@@ -56,6 +54,7 @@ tmww [-vhpecbrsy] [-a action] [-d delta] [config [action options]]
     -r -- override RING; set to "yes"
     -s -- override RING; set to "no"
     -y -- override DRYRUN; set to "yes"
+    -f -- override DRYRUN (set to "no") and run "fetch" action before anything else
     -a -- override CMDACTION
         options -h and -v after specified action will display help/version for this action
     -d -- override DELTA for downloading players list
@@ -77,9 +76,10 @@ override_action=''; override_delta=''
 override_silent=''; override_ring=''
 override_dryrun=''; override_verbose=''
 override_colors=''; override_bold=''
+override_fetch=''
 env_reuse='yes'; dump_aliases=''
 
-opts="vhpg:uza:d:sryecb"
+opts="vhpg:uza:d:sryfecb"
 
 OPTIND=1
 while $GETOPTS $opts opt ; do
@@ -102,6 +102,7 @@ while $GETOPTS $opts opt ; do
         s)  override_silent="true" ;;
         r)  override_ring="true" ;;
         y)  override_dryrun="true" ;;
+        f)  override_fetch="true" ;;
         e)  override_verbose="true" ;;
         c)  override_colors="true" ;;
         b)  override_bold="true" ;;
@@ -247,13 +248,14 @@ process_config
 
 [ "${env_reuse}" = "yes" ] || {
     # clearing variable with default values from outer space data
-    TMWW_LINK=''; TMWW_SERVERNAME=''; TMWW_CHARNAME=''
+    TMWW_LINK=''; TMWW_SERVERNAME=''; TMWW_ROLE=''
     TMWW_INSTANCE=''; TMWW_DELTA=''; TMWW_DRYRUN=''
     TMWW_VERBOSE=''; TMWW_PLUGINPATH=''; TMWW_UTILPATH=''
     TMWW_LOCK=''; TMWW_TMP=''; TMWW_PRIVTMP=''
     TMWW_LISTPATH=''; TMWW_HIGHLIGHT=''; TMWW_ANSICAPABLE=''
     TMWW_COLORS=''; TMWW_RING=''; TMWW_PLAY=''
-    TMWW_PLAYPATH=''
+    TMWW_RINGPATH=''; TMWW_RINGSOCKET=''; TMWW_PLAYDEV=''
+    TMWW_LISTINSTALL=''; TMWW_RINGFESTLANG=''
 }
 
 # set config variables
@@ -268,7 +270,7 @@ eval "${configdata}"
 
 TMWW_LINK="${TMWW_LINK:-http://server.themanaworld.org/online.html}"
 TMWW_SERVERNAME="${TMWW_SERVERNAME:-server.themanaworld.org}"
-TMWW_CHARNAME="${TMWW_CHARNAME:-}"
+TMWW_ROLE="${TMWW_ROLE:-main}"
 TMWW_INSTANCE="${TMWW_INSTANCE:-common}"
 TMWW_DELTA="${TMWW_DELTA:-20}"
 TMWW_DRYRUN="${TMWW_DRYRUN:-no}"
@@ -283,8 +285,11 @@ TMWW_HIGHLIGHT="${TMWW_HIGHLIGHT:-no}"
 TMWW_ANSICAPABLE="${TMWW_ANSICAPABLE:-no}"
 TMWW_COLORS="${TMWW_COLORS:-yes}"
 TMWW_RING="${TMWW_RING:-no}"
-TMWW_PLAY="${TMWW_PLAY:-/usr/bin/play}"
-TMWW_PLAYPATH="${TMWW_PLAYPATH:-${HOME}/.sound}"
+TMWW_PLAY="${TMWW_PLAY:-play -q}"
+TMWW_RINGPATH="${TMWW_RINGPATH:-${HOME}/.sound/event}"
+TMWW_RINGSOCKET="${TMWW_RINGSOCKET:-no}"
+TMWW_LISTINSTALL="${TMWW_LISTINSTALL:-no}"
+TMWW_RINGFESTLANG="british"
 
 # dump aliases from zsh completion
 [ -n "${dump_aliases}" ] && {
@@ -312,13 +317,14 @@ TMWW_PLAYPATH="${TMWW_PLAYPATH:-${HOME}/.sound}"
 }
 
 # action is overridden closer to execution to invalidate config defined prefix
-[ -z "$override_delta" ] || TMWW_DELTA=$override_delta
-[ -z "$override_ring" ] || TMWW_RING="yes"
-[ -z "$override_silent" ] || TMWW_RING="no"
-[ -z "$override_dryrun" ] || TMWW_DRYRUN="yes"
-[ -z "$override_verbose" ] || TMWW_VERBOSE="yes"
-[ -z "$override_colors" ] || TMWW_COLORS="no"
-[ -z "$override_bold" ] || TMWW_HIGHLIGHT="no"
+[ -z "${override_delta}" ] || TMWW_DELTA=$override_delta
+[ -z "${override_ring}" ] || TMWW_RING="yes"
+[ -z "${override_silent}" ] || TMWW_RING="no"
+[ -z "${override_fetch}" ] || TMWW_DRYRUN="no"
+[ -z "${override_dryrun}" ] || { TMWW_DRYRUN="yes"; override_fetch=''; }
+[ -z "${override_verbose}" ] || TMWW_VERBOSE="yes"
+[ -z "${override_colors}" ] || TMWW_COLORS="no"
+[ -z "${override_bold}" ] || TMWW_HIGHLIGHT="no"
 
 #
 # colors
@@ -434,7 +440,7 @@ fi
 # wrapped in function to preserve main quoted params
 check_ring() {
 if [ -n "$override_ring" ] || [ "$TMWW_RING" = "yes" ]; then
-   set -- $TMWW_PLAY
+   set -- ${TMWW_PLAY}
    if ! command -v "$1" >/dev/null 2>&1 ; then
        warning "Ring binary $1 not found."
        TMWW_RING="no"
@@ -443,28 +449,28 @@ fi
 }
 check_ring
 
-# raw/parsed online lists are shared and reside in TMP path
-list_raw="$TMWW_TMP/tmww-$servername-raw"
-list_online="$TMWW_TMP/tmww-$servername-online"
-# logon/logoff are personal and reside in PRIVTMP
-list_logon="$TMWW_PRIVTMP/tmww-$servername-logon"
-list_logoff="$TMWW_PRIVTMP/tmww-$servername-logoff"
+TMWW_LISTPATH="${TMWW_LISTPATH}/${servername}"
 
-# per server stuff
-list_dir_server="$TMWW_LISTPATH/$servername"
-# any GM level lists extractable from online list are stored in private LISTPATH
-list_gm="$TMWW_LISTPATH/$servername/auto.gm"
-# list_dev="$TMWW_LISTPATH/$servername/auto.dev"
+# raw/parsed online lists are shared and reside in TMP path
+list_raw="${TMWW_TMP}/tmww-${servername}-raw"
+list_online="${TMWW_TMP}/tmww-${servername}-online"
+# lists extracted from online list are shared too
+# these lists can be symlinked to LISTPATH by hand
+list_gm="${TMWW_TMP}/tmww-${servername}-gm"
+# list_dev="${TMWW_TMP}/tmww-${servername}-dev"
 # priveledged covers all online chars with any gm priv: gm, dev, admin and so on
 # not used right now
-# list_priveledged="$TMWW_TMP/tmww-$servername-priveledged"
+# list_priveledged="${TMWW_TMP}/tmww-${servername}-priveledged"
 
+# logon/logoff are personal and reside in PRIVTMP
+list_logon="${TMWW_PRIVTMP}/tmww-${servername}-logon.${TMWW_INSTANCE}"
+list_logoff="${TMWW_PRIVTMP}/tmww-${servername}-logoff.${TMWW_INSTANCE}"
 # old autolists generated from online list are personal and reside in PRIVTMP path
-# list_old_raw="$TMWW_PRIVTMP/tmww-$servername-raw.${TMWW_INSTANCE}"
-list_old_online="$TMWW_PRIVTMP/tmww-$servername-online.${TMWW_INSTANCE}"
-list_old_gm="$TMWW_PRIVTMP/tmww-$servername-gm.${TMWW_INSTANCE}"
-# list_old_dev="$TMWW_PRIVTMP/tmww-$servername-dev.${TMWW_INSTANCE}"
-# list_old_priveledged="$TMWW_PRIVTMP/tmww-$servername-priveledged.${TMWW_INSTANCE}"
+# list_old_raw="${TMWW_PRIVTMP}/tmww-${servername}-raw.${TMWW_INSTANCE}"
+list_old_online="${TMWW_PRIVTMP}/tmww-${servername}-online.${TMWW_INSTANCE}"
+list_old_gm="${TMWW_PRIVTMP}/tmww-${servername}-gm.${TMWW_INSTANCE}"
+# list_old_dev="${TMWW_PRIVTMP}/tmww-${servername}-dev.${TMWW_INSTANCE}"
+# list_old_priveledged="${TMWW_PRIVTMP}/tmww-${servername}-priveledged.${TMWW_INSTANCE}"
 
 lcase=abcdefghijklmnopqrstuvwxyz
 ucase=ABCDEFGHIJKLMNOPQRSTUVWXYZ
@@ -499,10 +505,9 @@ remove_shared () {
 # convert to one player per line, extract GM list
 # this part is critical. adjust when online list format changes
 parse_raw () {
-    mkdir -p "${list_dir_server}"
     remove_shared "${list_online}"
     remove_shared "${list_gm}"
-    case "$TMWW_LINK" in
+    case "${TMWW_LINK}" in
         *.txt)
             sed -n '
                 5,${
@@ -510,8 +515,8 @@ parse_raw () {
                     s/ *([^)]*) \{0,2\}$//;
                     s/\ *$//p
                 }' \
-                "$list_raw" | sort > "$list_online"
-            sed -n 's/\ *(GM) \{0,2\}$//p' "$list_raw" | sort > "$list_gm"
+                "${list_raw}" | sort > "${list_online}"
+            sed -n 's/\ *(GM) \{0,2\}$//p' "${list_raw}" | sort > "${list_gm}"
             ;;
         # else try to treat like html
         *) 
@@ -523,10 +528,10 @@ parse_raw () {
                     s/&gt;/>/g; s/&lt;/</g
                     s/<\/td>.*$//p
                 }' \
-                "$list_raw" | sort > "$list_online"
-            sed -n 's/^.*<b>//; s/<\/b>.*$//p' "$list_raw" | \
+                "${list_raw}" | sort > "${list_online}"
+            sed -n 's/^.*<b>//; s/<\/b>.*$//p' "${list_raw}" | \
                 # sed 1d | \
-                sort > "$list_gm"
+                sort > "${list_gm}"
             ;;
     esac
 }
@@ -555,19 +560,20 @@ fetch_all () {
 check_delta () { 
     # fetch online list if absent
     # OR ignore in "silent" mode or refetch after "delta" seconds
-    { [ ! -f $list_raw ] ||
-        [ $TMWW_DRYRUN != "yes" -a $(( $(date +%s) - $(stat -c %Z $list_raw) )) \
-        -gt $TMWW_DELTA 2>/dev/null ] ; } && \
+    { [ ! -f "${list_raw}" ] ||
+        [ "${TMWW_DRYRUN}" != "yes" -a $(( $(date +%s) - $( stat -c %Z "${list_raw}" ) )) \
+        -gt "${TMWW_DELTA}" 2>/dev/null ] ; } && \
             fetch_all
-    servertime=$( sed -n 's/.*Online.*\(..:..:..\).*/\1/p' $list_raw )
-    playersnum=$( wc -l < "$list_online" )
-    [ -z "$servertime" ] && {
+    servertime=$( sed -n 's/.*Online.*\(..:..:..\).*/\1/p' "${list_raw}" )
+    playersnum=$( wc -l < "${list_online}" )
+    [ -z "${servertime}" ] && {
         error "Download incomplete! Aborting."; exit 1; }
-    [ -f "$list_old_online" ] || touch "$list_old_online"
-    [ "$TMWW_DRYRUN" = "yes" ] || {
-        comm_23 "$list_online" "$list_old_online" > "$list_logon"
-        comm_23 "$list_old_online" "$list_online" > "$list_logoff"
-        cp "$list_online" "$list_old_online"
+    [ -f "${list_old_online}" ] || touch "${list_old_online}"
+    [ "${TMWW_DRYRUN}" = "yes" ] || {
+        comm_23 "${list_online}" "${list_old_online}" > "${list_logon}"
+        comm_23 "${list_old_online}" "${list_online}" > "${list_logoff}"
+        cp "${list_online}" "${list_old_online}"
+        cp "${list_gm}" "${list_old_gm}"
     }
 }
 
@@ -620,7 +626,7 @@ unset_fetch_lock() {
 }
 
 error_section() {
-    error "Error in config \"$section_name\" section. Aborting."
+    error "Error in config \"${section_name}\" section. Aborting."
     exit 1
 }
 
@@ -655,12 +661,6 @@ get_element() { eval printf \"\%s\" \$$(( $1 + 1 )) ; }
 get_dash() { get_element $1 $( shift; split_dash "$@" ) ; }
 get_comma() { get_element $1 $( shift; split_comma "$@" ) ; }
 get_tab() { local id IFS; id="$1"; shift; IFS="${tabchar}"; get_element ${id} $* ; }
-
-# no alert if list is missing!
-sort_list () {
-    [ ! -f "$TMWW_LISTPATH/$servername/$1" ] && return
-    sort -u "$TMWW_LISTPATH/$servername/$1"
-}
 
 make_csv() { ${AWK} -- '{if (FNR != 1) printf ", "; printf "%s",$0}' ; }
 
@@ -703,6 +703,20 @@ runaction(){
     TMWW_CMDACTION="$1"
     shift
     action_plugin "$@"
+}
+
+# args:
+# 1 -- list name
+# WARNING: make sure list.lib.sh is loaded
+# returns list name if ok
+compile_list() {
+    if [ "${TMWW_LISTINSTALL}" = "no" ]; then
+        func_list_compile "$1"
+    else
+        func_list_install "$1"
+    fi
+    printf "%s" "${TMWW_LISTCOMPPATH}/"
+    printf "%s\n" "$1" | sed 's|/|.|g'
 }
 
 #
@@ -755,74 +769,129 @@ action_external () {
     fi
 }
 
-action_ring () {
-    [ "${TMWW_RING}" = "yes" ] || return
-    process_section event
-    ring_backup=''; match_ring=''
-# FIXME printf "%s"
-    printf "$configdata\n" | tac | while read line; do
-        set -- $line
-        if [ -n $1 ]; then
-            case $1 in
-                all)
-                    case $2 in
-                        on) [ -s "$list_logon" ] && match_ring="$3" ;;
-                        off) [ -s "$list_logoff" ] && match_ring="$3" ;;
-                        *)  error_section event ;;
-                    esac
-                    ;;
-                pattern)
-                    case $3 in
-                        on) get_list=$( $NAMEGREP "$2" "$list_logon" )
-                            [ -n "$get_list" ] && match_ring="$4" ;;
-                        off) get_list=$( $NAMEGREP "$2" "$list_logoff" )
-                            [ -n "$get_list" ] && match_ring="$4" ;;
-                        *)  error_section event ;;
-                    esac
-                    ;;
-                gm)
-                    case $2 in
-                        on) get_list=$( comm_23 "$list_gm" \
-                                "$list_gm.$TMWW_ACTION" )
-                            ring_backup="yes"
-                            [ -n "$get_list" ] && match_ring="$3" ;;
-                        off) get_list=$( comm_23 "$list_gm.$TMWW_ACTION" \
-                                "$list_gm" )
-                            ring_backup="yes"
-                            [ -n "$get_list" ] && match_ring="$3" ;;
-                        *)  error_section event ;;
-                    esac
-                    ;;
-                *)
-                    case $2 in
-                        on)
-                            sorted_list=$( sort_list "$1" )
-                            get_list=$( printf "$sorted_list" | \
-                                comm_12 - "$list_logon" )
-                            [ -n "$get_list" ] &&
-                                match_ring="$3"
-                            ;;
-                        off)
-                            sorted_list=$( sort_list "$1" )
-                            get_list=$( printf "$sorted_list" | \
-                                comm_12 - "$list_logoff" )
-                            [ -n "$get_list" ] &&
-                                match_ring="$3"
-                            ;;
-                        *)  error_section event
-                            ;;
-                    esac
-                    ;;
+# args:
+# 1 -- event type
+# 2 -- argument
+aux_ring() {
+    [ -z "$1" ] && return 0
+    if [ "${TMWW_RINGSOCKET}" = "yes" ]; then
+        if [ "$1" = "type" ]; then
+            "${TMWW_UTILPATH}/mbuzzer" -t "$2" >/dev/null 2>&1
+        elif [ "$1" = "file" ]; then
+            "${TMWW_UTILPATH}/mbuzzer" -f "$2" >/dev/null 2>&1
+        elif [ "$1" = "festival" ]; then
+            shift
+            "${TMWW_UTILPATH}/mbuzzer" -b "$*" >/dev/null 2>&1
+        fi
+    else
+        if [ "$1" = "type" ]; then
+            ${PLAYDEV:+AUDIODEV=${PLAYDEV}} ${TMWW_PLAY} "${TMWW_RINGPATH}/$2" >/dev/null 2>&1 &
+        elif [ "$1" = "file" ]; then
+            ${PLAYDEV:+AUDIODEV=${PLAYDEV}} ${TMWW_PLAY} "$2" >/dev/null 2>&1 &
+        elif [ "$1" = "festival" ]; then
+            shift
+            printf "%s\n" "$*" | festival --language "${TMWW_RINGFESTLANG}" --tts >/dev/null 2>&1 &
+        fi
+    fi
+}
+
+# variables:
+# get_list -- matched names (if not empty - event matched)
+# event_arg -- rest of directive line
+parse_event() {
+    local list
+    get_list=
+    case "$1" in
+        all)
+            case "$2" in
+                on) if [ -s "${list_logon}" ]; then
+                        get_list=$( cat "${list_logon}" )
+                        shift 2
+                    fi ;;
+                off) if [ -s "${list_logoff}" ]; then
+                        get_list=$( cat "${list_logoff}" )
+                        shift 2
+                    fi ;;
+                *)  error_section ;;
             esac
-            [ -n "$match_ring" ] && {
-                eval "$TMWW_PLAY" "$TMWW_PLAYPATH/$match_ring" \
-                   >/dev/null 2>&1
-                break
-            }
+            ;;
+        pattern)
+            case "$3" in
+                on) get_list=$( egrep "$2" "${list_logon}" 2>/dev/null )
+                    shift 3
+                    ;;
+                off) get_list=$( egrep "$2" "${list_logoff}" 2>/dev/null )
+                    shift 3
+                    ;;
+                *)  error_section ;;
+            esac
+            ;;
+        gm)
+            case "$2" in
+                on) get_list=$( comm_23 "${list_gm}" "${list_old_gm}" 2>/dev/null )
+                    shift 2
+                    ;;
+                off) get_list=$( comm_23 "${list_old_gm}" "${list_gm}" 2>/dev/null )
+                    shift 2
+                    ;;
+                *)  error_section ;;
+            esac
+            ;;
+        list)
+            requireplugin list.lib.sh || return
+            list=$( compile_list "$2" )
+            [ -n "${list}" -a -s "${list}" ] || return
+            case "$3" in
+                on) get_list=$( sort "${list}" | \
+                        comm_12 - "${list_logon}" )
+                    shift 3
+                    ;;
+                off) get_list=$( sort "${list}" | \
+                        comm_12 - "${list_logoff}" )
+                    shift 3
+                    ;;
+                *)  error_section ;;
+            esac
+            ;;
+        *) error_section ;;
+    esac
+    event_arg="$@"
+}
+
+action_ring() {
+    local get_list
+    [ "${TMWW_RING}" = "yes" ] || return
+    ring_type=''; ring_arg=''
+    process_section event
+    printf "%s\n" "${configdata}" | tac | while read line; do
+        set -- ${line} 2>/dev/null
+        parse_event "$@"
+        if [ -n "${get_list}" ]; then
+            aux_ring ${event_arg}
+            break
         fi
     done
-    [ "$TMWW_DRYRUN" != "yes" ] && [ "$ring_backup" = "yes" ] &&
-        cp -u "$list_gm" "$list_old_gm"
+}
+
+action_trigger() {
+    local get_list gm_backup
+    process_section trigger
+    printf "%s\n" "${configdata}" | while read line; do
+        set -- ${line} 2>/dev/null
+        parse_event "$@"
+        if [ -n "${get_list}" ]; then
+            eval "$*"
+            break
+        fi
+    done
+}
+
+action_fetch() {
+    check_dir "${TMWW_TMP}"
+    check_dir "${TMWW_PRIVTMP}"
+    set_fetch_lock
+    check_delta
+    unset_fetch_lock
 }
 
 #
@@ -831,6 +900,8 @@ action_ring () {
 #
 
 TMWW_PLUGINS="yes"
+
+[ -n "${override_fetch}" ] && action_fetch
 
 # it's to prefix cmdline params passed to plugin with CMDPREFIX
 prefix_params() {
@@ -937,27 +1008,27 @@ printf "%s\n" "$configdata" | while read line; do
             [ -z "$2" ] || error_section
             action_ring
             ;;
+        trigger)
+            [ -z "$2" ] || error_section
+            action_trigger
+            ;;
         external)
             action_external "$@"
             ;;
         event)
-            action_external "$@"
+            [ -s "${list_logon}" -o -s "${list_logoff}" ] && action_external "$@"
             ;;
         fetch)
             [ -z "$2" ] || error_section
-            check_dir "$TMWW_TMP"
-            check_dir "$TMWW_PRIVTMP"
-            set_fetch_lock
-            check_delta
-            unset_fetch_lock
+            action_fetch
             ;;
         localfetch)
             [ -z "$2" ] || error_section
-            check_dir "$TMWW_TMP"
-            check_dir "$TMWW_PRIVTMP"
+            check_dir "${TMWW_TMP}"
+            check_dir "${TMWW_PRIVTMP}"
             set_fetch_lock
             # ensure priority for local link
-            TMWW_LINK=''
+            TMWW_LINK=
             check_delta
             unset_fetch_lock
             ;;
@@ -965,7 +1036,7 @@ printf "%s\n" "$configdata" | while read line; do
             [ -z "$2" ] && error_section
             process_section "$2"
             shift 2
-            eval "$configdata"
+            eval "${configdata}"
             ;;
         '')
             continue
@@ -978,7 +1049,7 @@ printf "%s\n" "$configdata" | while read line; do
             #            e.g. doesn't run few commands separated with ";"
             # you can use pipes and shell variables like $USER
             # e.g. to reuse result from external command
-            backifs="$IFS"; IFS=${uniqifs}
+            backifs="${IFS}"; IFS=${uniqifs}
             # stay silent on unpaired quotes
             eval set -- ${line} 2>/dev/null
             IFS="${backifs}"

@@ -83,11 +83,11 @@ Example
 Config
 ------
 
-VERSIONREPORT : string -> ~/log/tmww  
+VERSIONREPORT : string : ~/log/tmww  
     log path to read logon/logoff events
-SPARKCHARS : string -> 6  
+SPARKCHARS : string : 6  
     should be 6 or 7 - number of tick levels in statistics output
-STATSPLIT : yes/no -> no  
+STATSPLIT : yes/no : no  
     split stats and ruler with space after each 10 chars
 
 Bugs

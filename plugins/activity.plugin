@@ -292,9 +292,9 @@ case "$1" in
     average) activity_subcommand="average"
         opts=rsa:c:C:p:x:d:m:f:t:
         ;;
-    *)  error_incorrect; return 1
-        ;;
     '') error_missing; return 1
+        ;;
+    *)  error_incorrect; return 1
         ;;
 esac
 

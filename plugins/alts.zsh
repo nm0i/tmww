@@ -4,6 +4,7 @@
 #
 # don't forget to not overlap tcc and tpp with those aliases
 alias tp="tmww player"
+alias tpi="tmww player ids"
 alias tps="tmww player show"
 # alias tpsi="tmww player show ids by id"
 # alias tpsc="tmww player show ids by char"
@@ -100,7 +101,7 @@ _tmww_arg_players() {
 # complete characters
 _tmww_arg_chars() {
     local -a _opt_tmww_chars
-    local fname="${_opt_tmww_sharedtmp}/tmww/tmww-${_opt_tmww_servername}-online"
+    local fname="${_opt_tmww_sharedtmp}/tmww-${_opt_tmww_servername}-online"
     #_tmww_debug ${fname}
     if [ -f "${fname}" ]; then
         # protecting ":" for _describe
@@ -413,6 +414,7 @@ _tmww_plugin_alts_player() {
             'resolve:"PLAYER -- resolve all player alts into accounts"'
             'del:"PLAYER FIELD [ element VALUE ]"'
             'get:"{ CHAR | by { char CHAR | id ACCID } } -- dereference player entry"'
+            'ids:"PLAYER -- print all known associated account IDs"'
             'show:"{ PLAYER | [ ids | chars ] by { char CHAR | id CHAR | player PLAYER } } -- lookup"'
             'list:"list with { FIELD | { { FIELD [ not ] as VALUE | VALUE [ not ] in FIELD } { and | or } }+ }"'
             'dump:"PLAYER -- dump JSONline record of PLAYER"'
@@ -452,6 +454,12 @@ _tmww_plugin_alts_player_create() {
     # suggest already known players
     _arguments \
         ":$_desc_arg_rules_player:_tmww_arg_players"
+}
+
+# ids PLAYER
+_tmww_plugin_alts_player_ids() {
+    _arguments \
+        ": :_tmww_arg_players"
 }
 
 # dump PLAYER

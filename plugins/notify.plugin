@@ -1,0 +1,102 @@
+#!/bin/sh
+# tmww plugin: notify
+# whatis: popup notification for logon/logoff event
+# conflicts: -
+# depends: list.lib.sh
+# recommends: -
+
+# this file is part of tmww - the mana world watcher
+# willee, 2012-2014
+# GPL v3
+
+# check if not run as plugin
+if [ "$TMWW_PLUGINS" != "yes" ] ; then
+    echo >&2 "This script is tmww plugin and rely heavily on it's facilities."
+    exit 1
+fi
+
+help_notify() {
+    cat << EOF
+notify -- popup notification for logon/logoff event
+
+    example crontab:
+    */15 * * * * DISPLAY=:0 TMWW_INSTANCE=notify_fr \
+        /path/to/tmww -frd 840 -anotify default friend.list type logon type logoff
+    * * * * * DISPLAY=:0 TMWW_INSTANCE=notify_att \
+        /path/to/tmww -frd 30 -anotify default attention.list type alarm
+
+Options:
+
+    LIST [ SOUNDEVENT SOUNDARG [ SOUNDEVENT SOUNDARG ] ]
+
+    where LIST is player list to generate logon/logoff events
+    and SOUNDEVENT/SOUNDARG optional pairs describe logon/logoff sound
+    see tmww-config(5) and tmww-mbuzzer(1) for sound details
+EOF
+}
+
+[ "$TMWW_PLUGINHELP" = "yes" ] && help_notify && return 0
+[ "$TMWW_PLUGINEXPORT" = "yes" ] && return 0
+
+requireplugin list.lib.sh || return 1
+
+TMWW_NOTIFYAGENT="${TMWW_NOTIFYAGENT:-/usr/bin/notify-send -t 2000 %t %b}"
+TMWW_NOTIFYSOCKET="${TMWW_NOTIFYSOCKET:-no}"
+
+check_notify() {
+    set -- ${TMWW_NOTIFYAGENT} 2>/dev/null
+    if ! command -v "$1" >/dev/null 2>&1; then
+        echo >&2 "Notify binary $1 not found. Aborting.";
+        exit 1;
+    fi
+}
+check_notify
+
+# check if nothing to do
+[ -s "${list_logon}" -o -s "${list_logoff}" ] || return 0
+
+notify_body=''; match_ring=''
+
+[ -z "$1" ] && { error_missing; return 1; }
+
+list=$( compile_list "$1" )
+# silent abort
+[ -n "${list}" -a -s "${list}" ] || return 0
+
+get_list=$( sort "${list}" | comm_12 - "${list_logon}" | make_csv )
+if [ -n "${get_list}" ]; then
+    notify_body="Logged on: ${get_list}\n"
+    if [ -n "$2" -a -n "$3" ]; then
+        r1="$2"; r2="$3"
+    fi
+    match_ring=1
+fi
+get_list=$( sort "${list}" | comm_12 - "${list_logoff}" | make_csv )
+if [ -n "$get_list" ]; then
+    notify_body="${notify_body}Logged off: ${get_list}"
+    if [ -z "${match_ring}" ]; then
+        if [ -n "$4" -a -n "$5" ]; then
+            r1="$4"; r2="$5"
+        fi
+        match_ring=1
+    fi
+fi
+
+if [ -n "${notify_body}" ]; then
+    notify_body=$( printf "%s" "${notify_body}" | sed "s/'/'\"'\"'/g;s|[\/&]|\\\\&|g" )
+    notify_title="TMW Watcher"
+    if [ "${TMWW_NOTIFYSOCKET}" = "yes" ]; then
+        "${TMWW_UTILPATH}/mbuzzer" -n "${notify_body}" >/dev/null 2>&1
+    else
+        notify_agent=$( printf "%s\n" "${TMWW_NOTIFYAGENT}" | \
+            sed ${ESED} "s/%t/'${notify_title}'/;s/%b/'${notify_body}'/" )
+        eval "${notify_agent}" >/dev/null 2>&1
+    fi
+fi
+
+if [ -n "${match_ring}" ]; then
+    aux_ring "${r1}" "${r2}"
+fi
+
+return
+

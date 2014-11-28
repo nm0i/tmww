@@ -9,12 +9,14 @@ IMPORTANT: run "log" action only after you performed "fetch"
 
 .crontab example
 
-    */5 * * * * /path/to/tmww -a log -d 240 tmw-common.conf >/dev/null 2>&1
+Using default log.conf:
+
+    */5 * * * * /path/to/tmww log >/dev/null 2>&1
 
 Config
 ------
 
-LOGPATH : string -> ~/log/tmww  
+LOGPATH : string : ~/log/tmww  
     log dir
 
 Copyright

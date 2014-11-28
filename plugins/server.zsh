@@ -3,6 +3,7 @@
 # GPL v3
 #
 alias sp="tmww splayer"
+alias spi="tmww splayer ids"
 alias sps="tmww splayer show"
 # alias spsi="tmww splayer show ids by id"
 # alias spsc="tmww splayer show ids by char"
@@ -474,6 +475,7 @@ _tmww_plugin_server_player_args() {
             'resolve:"PLAYER -- resolve all player alts into accounts"'
             'del:"PLAYER FIELD [ element VALUE ]"'
             'get:"{ CHAR | by { char CHAR | id ACCID | pcid PCID } }"'
+            'ids:"PLAYER -- print all known associated account IDs"'
             'show:"{ PLAYER | [ ids | chars | parties | accs | db | FIELD+ ] by { char CHAR | id ID | pcid PCID } }"'
             'summary:"{ gp | bp | exp | items } by { char CHAR | id ID | player PLAYER | pcid PCID }"'
             'list:"list with { FIELD | { { FIELD [ not ] as VALUE | VALUE [ not ] in FIELD } { and | or } }+ }"'
@@ -516,6 +518,12 @@ _tmww_plugin_server_player_create() {
     # suggest already known players
     _arguments \
         ":$_desc_arg_rules_player:_tmww_arg_players"
+}
+
+# ids PLAYER
+_tmww_plugin_server_player_ids() {
+    _arguments \
+        ": :_tmww_arg_players"
 }
 
 # dump PLAYER

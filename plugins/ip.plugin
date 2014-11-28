@@ -1,0 +1,274 @@
+#!/bin/sh
+# tmww plugin: ip
+# whatis: login server log IPs filter
+# conflicts: -
+# depends: server, ip.py util
+# recommends: -
+
+# this file is part of tmww - the mana world watcher
+# willee, 2014
+# GPL v3
+
+# check if not run as plugin
+if [ "$TMWW_PLUGINS" != "yes" ] ; then
+    echo >&2 "This script is tmww plugin and rely heavily on it's facilities."
+    exit 1
+fi
+
+help_ip() {
+    cat << EOF
+ip - login server log IPs filter
+
+Command line options:
+    subcommand: domains -- form collision domains
+        [ -w FILE ] -- write cache to default path (SERVERSTAFF)
+        [ -r FILE ] -- use cache (e.g. formed with "tmww server ip -m2 -w FILE"
+            skips date interval settings
+        No -w or -r option causes output to stdout
+        [ -u ] -- lookup all chars from matched domain IDs
+        [ -n ] -- lookup all non-aliased chars from matched domain IDs
+    subcommand: matches -- filter matching logins
+        [ -g ] -- print date - time - id - ip - geoiplookup
+        [ -i ] -- print date - time - id - ip
+        [ -s ] -- geoiplookup stats
+        No filter options will output lines unchanged.
+    Common options:
+    - time interval options:
+        [ -m N ] -- last N monthes
+        [ -d N ] -- last N days
+        [ -f DATE ] -- from date
+        [ -t DATE ] -- to date (optional)
+    - char matching options:
+        [ -p PLAYER ] -- target player
+        [ -c CHAR ] -- target char
+        [ -C CHAR ] -- target chars on account
+        [ -a ID ] -- target by account ID
+EOF
+}
+
+[ "$TMWW_PLUGINHELP" = "yes" ] && help_ip && return 0
+
+requireplugin server.lib.sh || return 1
+TMWW_SERVERLOGINLOG="${TMWW_SERVERLOGINLOG:-${TMWW_SERVERPATH}/login/log/login.log}"
+TMWW_SERVERSTAFF="${TMWW_SERVERSTAFF:-${TMWW_TMP}/ip}"
+
+platform="${platform:-GNU}"
+
+#
+# aux
+#
+#
+
+aux_ip_convert_date() {
+    case "${platform}" in
+        GNU) date -d "$1" '+%Y%m%d%H%M%S.000' 2>/dev/null ;;
+    esac
+}
+
+aux_ip_interval() {
+    if [ -n "${interval_from}" ]; then
+        interval_from=$( aux_ip_convert_date "${interval_from}" )
+        [ -z "${interval_from}" ] && { error_date; return 1; }
+        interval_to=$( aux_ip_convert_date "${interval_to}" )
+        [ -z "${interval_to}" ] && { error_date; return 1; }
+    elif [ -n "${interval_day}" ]; then
+        interval_from=$( aux_ip_convert_date "${interval_day} days ago" )
+        [ -z "${interval_from}" ] && { error_date; return 1; }
+        interval_to=$( aux_ip_convert_date "now" )
+    elif [ -n "${interval_month}" ]; then
+        interval_from=$( aux_ip_convert_date "${interval_month} month ago" )
+        [ -z "${interval_from}" ] && { error_date; return 1; }
+        interval_to=$( aux_ip_convert_date "now" )
+    fi
+    [ -z "${interval_from}" ] && interval_from='0'
+    [ -z "${interval_to}" ] && interval_to=$( aux_ip_convert_date "now" )
+}
+
+#
+# options parser
+#
+#
+
+[ "$TMWW_PLUGINEXPORT" = "yes" ] && return 0
+
+timeopt=m:d:f:t:
+charopt=p:c:a:
+
+ip_subcommand=
+case "$1" in
+    domains) ip_subcommand=
+        opts=w:r:un${timeopt}${charopt}
+        ;;
+    matches) ip_subcommand=1
+        opts=gis${timeopt}${charopt}
+        ;;
+    '') error_missing; return 1
+        ;;
+    *)  error_incorrect; return 1
+        ;;
+esac
+
+shift
+
+domains_write=
+domains_read=
+domains_file=
+target_value=
+target_method=
+interval_method=
+lookup_method=
+matches_method=
+
+interval_day=''
+interval_month=''
+interval_from=''
+interval_to=''
+
+OPTIND=1
+while ${GETOPTS} ${opts} opt ; do
+    case "${opt}" in
+        w)  domains_write=1
+            domains_file="${OPTARG}"
+            ;;
+        r)  domains_read=1
+            domains_file="${OPTARG}"
+            ;;
+        u)  lookup_method="u" ;;
+        n)  lookup_method="n" ;;
+        g)  matches_method="g" ;;
+        i)  matches_method="i" ;;
+        s)  matches_method="s" ;;
+        a)  target_value="$OPTARG"
+            target_method="id"
+            ;;
+        c)  target_value=$( func_char_get "$OPTARG" )
+            target_method="id"
+            ;;
+        p)  target_value="$OPTARG"
+            target_method="player"
+            ;;
+        f)  interval_from="$OPTARG"
+            [ -z "${interval_day}" -a -z "${interval_month}" ] || \
+                { error_params "Options conflict. Aborting"; return 1; }
+            ;;
+        t)  interval_to="$OPTARG"
+            [ -z "${interval_from}" ] && \
+                { error_params "No -f argument before -t. Aborting."; return 1; }
+            ;;
+        d)  interval_day="$OPTARG"
+            [ -z "${interval_from}" ] || \
+                { error_params "Options conflict. Aborting"; return 1; }
+            check_string_chars "${interval_day}" "*[!0-9]*" \
+                "Incorrect days number. Aborting." || return 1
+            ;;
+        m)  interval_month="$OPTARG"
+            [ -z "${interval_from}" ] || \
+                { error_params "Options conflict. Aborting"; return 1; }
+            check_string_chars "${interval_month}" "*[!0-9]*" \
+                "Incorrect months number. Aborting." || return 1
+            ;;
+        *)  error_incorrect; return 1
+            ;;
+    esac
+done
+
+shift $(expr $OPTIND - 1)
+[ -z "$1" ] || { error_toomuch; return 1; }
+
+aux_ip_interval
+
+#
+# main
+#
+#
+
+if [ -z "${ip_subcommand}" ]; then
+    # domains
+    {
+        if [ -n "${domains_read}" ]; then
+            cat "${TMWW_SERVERSTAFF}/${domains_file}"
+        else
+            ${AWK} ${AWKPARAMS} -v interval_from="${interval_from}" \
+                -v interval_to="${interval_to}" -- '
+            /Authentification accepted/ {
+                time = $1 $2; gsub("[: -]","",time)
+                if (( time > interval_from) && (time < interval_to )) print
+            }
+            ' "${TMWW_SERVERLOGINLOG}" |
+                sed ${ESED} 's/.*id: ([0-9]{7})\), ip: ([^)]+).*/\1 \2/' |
+                "${TMWW_UTILPATH}/ip.py" "${playerdb}" |
+                {
+                    if [ -n "${domains_write}" ]; then
+                        check_dir "${TMWW_SERVERSTAFF}"
+                        cat > "${TMWW_SERVERSTAFF}/${domains_file}"
+                        return 0
+                    else
+                        cat
+                    fi
+                }
+        fi
+    } | {
+        case "${target_method}" in
+            player)
+                jq -c -M --arg pl "${target_value}" 'select(
+                    contains({"players":[$pl]})
+                )' 2>/dev/null ;;
+            id)
+                jq -c -M --arg id "${target_value}" 'select(
+                    contains({"ids":[$id]}) or contains({"nids":[$id]})
+                )' 2>/dev/null ;;
+            *) cat ;;
+        esac
+    } | {
+        if [ -n "${lookup_method}" ]; then
+            case "${lookup_method}" in
+                u)  jq -c -r '.ids[], .nids[]' 2>/dev/null ;;
+                n)  jq -c -r '.ids[]' 2>/dev/null ;;
+            esac | while read line; do
+                aux_char_show_ids_by_id "${line}"
+            done
+        else
+            cat
+        fi
+    }
+else
+    # matches
+    if [ "${target_method}" = "player" ]; then
+        target_value=$( func_player_ids "${target_value}" )
+        if [ -z "${target_value}" ]; then
+            error "Target player does not exist or has no known IDs associated"
+            return 1
+        fi
+    fi
+    ${AWK} ${AWKPARAMS} -v interval_from="${interval_from}" \
+        -v interval_to="${interval_to}" -v ids="${target_value}" -- '
+    BEGIN { split(ids,i,"\n"); for (j in i) id[i[j] "),"]=1 }
+    /Authentification accepted/ {
+        time = $1 $2; gsub("[: -]","",time)
+        if ( time < interval_from || time > interval_to ) next
+        if ( $8 in id ) print
+    }
+    ' "${TMWW_SERVERLOGINLOG}" | {
+        if [ -n "${matches_method}" ]; then
+            sed ${ESED} 's/^([^ ]+) ([^ ]+) .*id: ([0-9]{7})\), ip: ([^)]+).*/\1 \2 \3 \4/g'
+        else
+            cat
+        fi
+    } | {
+        case "${matches_method}" in
+            g)  while read -r line; do
+                    # debian wheezy geoiplookup output prefixed with "GeoIP Country Edition:"
+                    printf "%s %s\n" "${line}" "$(geoiplookup ${line##* } | cut -d ' ' -f 4- )"
+                done
+                ;;
+            s)  while read -r line; do
+                    geoiplookup "${line##* }" | cut -d ' ' -f 4-
+                done | sort | uniq -c | "${TMWW_UTILPATH}/bars"
+                ;;
+            *)  cat ;;
+        esac
+    }
+fi
+
+return 0
+

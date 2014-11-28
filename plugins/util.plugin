@@ -21,7 +21,13 @@ util - miscellineous uncategorized scripts
 
     subcommand: grep PLAYER GREPARGS -- grep text for player alts
     subcommand: find PLAYER -- lookup online player list for player alts
-    subcommand: stats LVL [STR AGI VIT INT DEX LUK] -- invoke stats script from $UTILPATH
+    subcommand: stats LVL [STR AGI VIT INT DEX LUK] -- invoke stats script from \$UTILPATH
+    subcommand: list -- list operations
+        update id ID -- create update files for lists containing ID (user independent)
+        update player PLAYER -- same for players (user independent)
+        compile LIST -- compile list to PRIVTMP
+        install LIST -- compile list + add update files for sniffer
+    subcommand: mbuzzer -- pass arguments to mbuzzer util
 EOF
 }
 
@@ -52,7 +58,13 @@ case "${subcommand}" in
     stats)
         "${TMWW_UTILPATH}/stats" "$@"
         ;;
-    '') error_missing; return 1 ;;
+    list)
+        requireplugin list.lib.sh || return 1
+        func_list "$@" || return 1
+        ;;
+    mbuzzer)
+        "${TMWW_UTILPATH}/mbuzzer" "$@"
+        ;;
     *)  error_incorrect; return 1 ;;
 esac
 

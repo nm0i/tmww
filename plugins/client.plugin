@@ -91,9 +91,9 @@ case "$1" in
     pattern) client_subcommand="pattern"
         opts=sn:d:m:f:t:u:
         ;;
-    *)  error_incorrect; return 1
-        ;;
     '') error_missing; return 1
+        ;;
+    *)  error_incorrect; return 1
         ;;
 esac
 

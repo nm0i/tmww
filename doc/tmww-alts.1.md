@@ -105,11 +105,11 @@ has "player" alias. Character names with unknown account IDs are listed in
 Config
 ------
 
-ALTSPATH : string -> ${DIRCONFIG}/alts  
+ALTSPATH : string : ${DIRCONFIG}/alts  
     DB location
-LIMITED : yes/no -> no  
+LIMITED : yes/no : no  
     see notes on _Limited access_
-UPDATELIMITED : yes/no -> no  
+UPDATELIMITED : yes/no : no  
     see notes on _Limited access_
 
 Notes
@@ -139,6 +139,8 @@ For conflict/merge'n'add collision log you should try
 _db_path/servername/char_conflicts.log_ or similar name for party conflicts.
 
 .Char operations
+
+Most operations requiring char name are case-sensitive.
 
 Amount of alts on same account limited on query to 30.
 

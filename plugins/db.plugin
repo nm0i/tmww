@@ -78,12 +78,12 @@ db_parse_item() {
     db_no_caption=''; db_suppress_append=''; db_cut_fields=''; db_raw_fields='';
     aux_db_opts "$@"
     shift $( expr $OPTIND - 1 )
+    [ -z "$1" ] && { error_missing; return 1; }
     subcommand="$1"; shift
     case "${subcommand}" in
         get)    func_item_get "$@" ;;
         show)   func_item_show "$@" ;;
         mobs)   func_item_mobs "$@" ;;
-        '') error_missing; return 1; ;;
         *) error_incorrect; return 1; ;;
     esac
 }
@@ -98,12 +98,12 @@ db_parse_mob() {
     db_no_caption=''; db_suppress_append=''; db_cut_fields=''; db_raw_fields='';
     aux_db_opts "$@"
     shift $( expr $OPTIND - 1 )
+    [ -z "$1" ] && { error_missing; return 1; }
     subcommand="$1"; shift
     case "${subcommand}" in
         get)    func_mob_get "$@" ;;
         show)   func_mob_show "$@" ;;
         drops)  func_mob_drops "$@" ;;
-        '') error_missing; return 1; ;;
         *) error_incorrect; return 1; ;;
     esac
 }
@@ -116,11 +116,11 @@ db_parse_mob() {
 db_main_parser() {
     local subcommand
     OPTIND=1
+    [ -z "$1" ] && { error_missing; return 1; }
     subcommand="$1"; shift
     case "${subcommand}" in 
         item)       db_parse_item "$@" ;;
         mob)        db_parse_mob "$@" ;;
-        '')         error_missing; return 1 ;;
         *)          error_incorrect; return 1 ;;
     esac
 }
