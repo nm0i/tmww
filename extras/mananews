@@ -1,0 +1,128 @@
+#!/bin/sh
+# Liferea/newsbeuter compatible RSS generator from TMW news format
+# http://themanaworld.org/
+# GPL3, 2013; willee
+FETCH="/usr/bin/curl --retry 0 -s -L -m 8 --retry-delay 1"
+# FETCH="/usr/bin/wget -O - -c -t 1 -q"
+LINK="http://tmwdata.org/updates/news.txt"
+AWK="$(command -v mawk 2>/dev/null)"
+
+#cat news.txt | ${AWK:-awk} -- '
+${FETCH} ${LINK} | ${AWK:-awk} -- '
+function close_item() {
+    if (marker_first != 0) {
+        if (got_author != 0) {
+            print "<b>" author "</b><br>"
+        }
+        if (got_date !=0) {
+            print "<b>" date "</b>"
+        }
+        print "]]></description>"
+    }
+    if (got_date !=0) {
+# old date entries from news.txt cannot be converted correctly
+# and cause wrong items order; back to date as regular text for now
+#        print "<pubDate>" date "</pubDate>"
+        got_date = 0
+    }
+    if (got_author != 0) {
+        print "<author>" author "</author>"
+        got_author = 0
+    }
+    if (marker_first != 0) print "</item>"
+
+}
+
+BEGIN {
+    printf "\
+<?xml version=\"1.0\" ?>\n\
+<rss version=\"2.0\" xmlns:content=\"http://purl.org/rss/1.0/modules/content/\">\n\
+<channel>\n\
+    <title>The Mana World in-game News</title>\n\
+    <link>\$LINK</link>\n\
+    <description>http://themanaworld.org/</description>\n\
+    <ttl>15</ttl>\n\
+";
+    marker_first = 0
+    got_author = 0
+    got_date = 0
+    marker_bold = 0
+}
+
+# bold text
+/##1/ {
+    sub("##1","<b>")
+    marker_bold = 1
+}
+
+# ignoring
+/##8/ {
+    if (marker_bold == 1) {
+        sub("##8","</b>")
+        marker_bold = 0
+    }
+    else sub("##8","")
+}
+
+# expecting 1 link per line, otherwise change order and sub to gsub
+/@@.*@@.*##0/ {
+    sub("@@","<a href=\"")
+    sub("\\|","\">")
+    # sub("@@.*##0","</a>")
+    sub("@@","</a>")
+    if (marker_bold == 1) {
+        print "</b>"
+        marker_bold = 0
+    }
+    sub("##0","")
+}
+
+# title
+/##7.*##0/ {
+    close_item()
+    printf "<item><title>"
+    sub("^.*##7","")
+    sub("##0.*$","")
+    print $0 "</title><description><![CDATA["
+    marker_first = 1
+    next
+}
+
+# date
+/##3.*##0/ {
+    got_date = 1
+    date = $0
+    sub("^.*##3\ *","",date)
+    sub("\ *##0.*$","",date)
+    next
+}
+
+# author
+/##2.*##0/ {
+    got_author = 1
+    author = $0
+    sub("^.*##2\ *","",author)
+    sub("\ *##0.*$","",author)
+    next
+}
+
+# closing tag
+/##0/ {
+    if (marker_bold == 1) {
+        sub("##0","</b>")
+        marker_bold = 0
+    }
+    else sub("##0","")
+}
+
+# body
+{
+    if (marker_first != 0) print $0 "<br>"
+}
+
+END {
+    close_item()
+    printf "</channel>\n\
+</rdf:RDF>"
+}
+'

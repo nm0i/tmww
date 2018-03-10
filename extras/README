@@ -1,0 +1,17 @@
+mananews: newsbeuter exec plugin for ingame news
+
+- skip update procedure without loosing update news
+- skip turning on client/webpage to check news
+- in case your client cannot fetch news
+
+http://themanaworld.org/
+
+files:
+
+config
+    example newsbeuter config
+urls
+    example mananews call from newsbeuter urls list
+news.txt
+    example news.txt (uncomment/comment cat/FETCH lines in mananews to test)
+

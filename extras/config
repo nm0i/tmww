@@ -1,0 +1,17 @@
+urls-source "local"
+
+notify-program notify-send
+notify-format "%d new articles (%n unread articles, %f unread feeds)"
+notify-always yes
+
+auto-reload yes
+# reload time works only with auto-reload
+# and auto-reload will reload with every newsbeuter start
+reload-time 360
+
+feedlist-format "%S %2i %7T %9u %n %t"
+feed-sort-order firsttag 
+articlelist-format "%4i . %6D %f %?T?|%-15T| ?%t %>  %?a?[ %a ]?"
+
+# highlight articlelist ".*.*" blue default
+
